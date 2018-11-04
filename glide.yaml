@@ -1,0 +1,17 @@
+package: github.ibm.com/deep-learning-platform/dlaas-commons
+import:
+- package: github.com/sirupsen/logrus
+  version: v1.0.5
+- package: github.com/go-kit/kit
+  version: v0.7.0
+  subpackages:
+  - metrics
+- package: github.com/sony/gobreaker
+- package: github.com/alecthomas/units
+- package: google.golang.org/grpc
+  version: v1.14.0
+- package: github.com/golang/mock
+  subpackages:
+  - gomock
+- package: github.com/grpc-ecosystem/go-grpc-prometheus
+  version: v1.2.0
