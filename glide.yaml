@@ -24,7 +24,7 @@ import:
   - prometheus
   - prometheus/push
 - package: github.com/sirupsen/logrus
-  version: ^1.2.0
+  version: v1.1.1
 - package: github.com/sony/gobreaker
   version: ^0.4.0
 - package: github.com/spf13/cobra
