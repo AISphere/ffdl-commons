@@ -9,9 +9,6 @@
 
 GRPC_DIR = /go/src/github.ibm.com/deep-learning-platform/grpc-health-checker
 
-install-deps:
-	glide install
-
 build-local: clean
 	go build -o bin/grpc-health-checker
 
