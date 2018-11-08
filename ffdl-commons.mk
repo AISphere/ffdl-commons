@@ -241,7 +241,7 @@ protoc-trainer:  ## Make the trainer protoc client, depends on `make glide` bein
 protoc-lcm:  ## Make the lcm protoc client, depends on `make glide` being run first
 	#	rm -rf $(LCM_LOCATION)/$(LCM_SUBDIR)
 	wget https://$(LCM_REPO)/$(LCM_VERSION)/$(LCM_SUBDIR_IN)/$(LCM_FNAME).proto -P $(LCM_LOCATION)/$(LCM_SUBDIR)
-	wget https://$(LCM_REPO)/$(LCM_VERSION)/service/grpc_training_data_v1/client/lcm.go -P $(LCM_LOCATION)/service/grpc_training_data_v1/client
+	wget https://$(LCM_REPO)/$(LCM_VERSION)/service/client/lcm.go -P $(LCM_LOCATION)/service/grpc_training_data_v1/client
 	wget https://$(LCM_REPO)/$(LCM_VERSION)/service/grpc_training_data_v1/lifecycle.go -P $(LCM_LOCATION)/service/grpc_training_data_v1
 	wget https://$(LCM_REPO)/$(LCM_VERSION)/lcmconfig/lcmconfig.go -P $(LCM_LOCATION)/lcmconfig
 	wget https://$(LCM_REPO)/$(LCM_VERSION)/coord/coord.go -P $(LCM_LOCATION)/coord
