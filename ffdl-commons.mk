@@ -307,7 +307,7 @@ clean-all:
 	@for x in ${REPOS_CORE_FFDL}; do \
 		echo cleaning ${AISPHERE_DIR}/$$x; \
 		cd ${AISPHERE_DIR}/$$x; \
-		rm ffdl-commons.mk
+		rm ffdl-commons.mk; \
 		make clean-base; \
 	done
 
