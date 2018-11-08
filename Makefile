@@ -14,14 +14,9 @@
 # limitations under the License.
 #
 
-usage:              ## Show this help
-	@fgrep -h " ## " $(MAKEFILE_LIST) | fgrep -v fgrep | sed -e 's/\\$$//' | sed -e 's/##//'
+DOCKER_IMG_NAME="no_image!"
 
-vet:
-	go vet $(shell glide nv)
-
-lint:               ## Run the code linter
-	go list ./... | grep -v /vendor/ | grep -v /grpc_trainer_v2 | xargs -L1 golint -set_exit_status
+include ffdl-commons.mk
 
 glide:               ## Run full glide rebuild
 	glide cache-clear; \

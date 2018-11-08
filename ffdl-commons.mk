@@ -18,6 +18,8 @@
 # Common variables and targets for FfDL Makefiles
 #
 
+SHELL = /bin/sh
+
 # The ip or hostname of the Docker host.
 # Note the awkward name is to avoid clashing with the DOCKER_HOST variable.
 DOCKERHOST_HOST ?= localhost
@@ -33,13 +35,6 @@ endif
 FSWATCH := $(shell which fswatch 2>/dev/null)
 
 WHOAMI ?= $(shell whoami)
-
-DOCKER_BX_NS ?= registry.ng.bluemix.net/dlaas_dev
-DOCKER_BASE_IMG_NAME=dlaas-service-base
-DOCKER_BASE_IMG_TAG=ubuntu16.04
-SWAGGER_FILE=api/swagger/swagger.yml
-
-DOCKER_IMG_NAME=lifecycle-manager-service
 
 KUBE_CURRENT_CONTEXT ?= $(shell kubectl config current-context)
 
@@ -82,13 +77,81 @@ DLAAS_LEARNER_KUBE_KEYFILE ?= $(shell env DLAAS_KUBE_CONTEXT=$(DLAAS_LEARNER_KUB
 DLAAS_LEARNER_KUBE_CERTFILE ?= $(shell env DLAAS_KUBE_CONTEXT=$(DLAAS_LEARNER_KUBE_CONTEXT) ./bin/kubecontext.sh client-certificate)
 DLAAS_LEARNER_KUBE_SECRET ?= kubecontext-$(DLAAS_LEARNER_KUBE_CONTEXT)
 
-
 KUBE_SERVICES_CONTEXT_ARGS = --context $(DLAAS_SERVICES_KUBE_CONTEXT) --namespace $(DLAAS_SERVICES_KUBE_NAMESPACE)
 KUBE_LEARNER_CONTEXT_ARGS = --context $(DLAAS_LEARNER_KUBE_CONTEXT) --namespace $(DLAAS_LEARNER_KUBE_NAMESPACE)
+
+IMAGE_NAME_PREFIX = ffdl-
+WHOAMI ?= $(shell whoami)
+IMAGE_TAG ?= user-$(WHOAMI)
+TEST_SAMPLE ?= tf-model
+# VM_TYPE is "vagrant", "minikube" or "none"
+VM_TYPE ?= minikube
+HAS_STATIC_VOLUMES?=false
+TEST_USER = test-user
+SET_LOCAL_ROUTES ?= 0
+MINIKUBE_RAM ?= 4096
+MINIKUBE_CPUS ?= 3
+MINIKUBE_DRIVER ?= hyperkit
+MINIKUBE_BRIDGE ?= $(shell (ifconfig | grep -e "^bridge100:" || ifconfig | grep -e "^bridge0:") | sed 's/\(.*\):.*/\1/')
+UI_REPO = git@github.com:IBM/FfDL-dashboard.git
+CLI_CMD = $(shell pwd)/cli/bin/ffdl-$(UNAME_SHORT)
+CLUSTER_NAME ?= mycluster
+PUBLIC_IP ?= 127.0.0.1
+CI_MINIKUBE_VERSION ?= v0.25.1
+CI_KUBECTL_VERSION ?= v1.9.4
+NAMESPACE ?= default
+
+AWS_ACCESS_KEY_ID ?= test
+AWS_SECRET_ACCESS_KEY ?= test
+AWS_URL ?= http:\/\/s3\.default\.svc\.cluster\.local
 
 # Use non-conflicting image tag, and Eureka name.
 DLAAS_IMAGE_TAG ?= user-$(WHOAMI)
 DLAAS_EUREKA_NAME ?= $(shell echo DLAAS-USER-$(WHOAMI) | tr '[:lower:]' '[:upper:]')
+
+TRAINER_DOCKER_IMG_NAME ?= trainer-v2-service
+LCM_DOCKER_IMG_NAME ?= lifecycle-manager-service
+TDS_DOCKER_IMG_NAME ?= training-data-service
+JOBMONITOR_NAME ?= jobmonitor
+
+SERVICE_IMAGES ?= ${TRAINER_DOCKER_IMG_NAME} ${LCM_DOCKER_IMG_NAME} ${TDS_DOCKER_IMG_NAME} ${JOBMONITOR_NAME}
+
+DOCKER_BX_NS ?= registry.ng.bluemix.net/dlaas_dev
+DOCKER_REPO ?= ${DOCKER_BX_NS}
+#DOCKER_REPO ?= docker.io
+DOCKER_REPO_USER ?= user-test
+DOCKER_REPO_PASS ?= test
+DOCKER_REPO_DIR ?= ~/docker-registry/
+DOCKER_NAMESPACE ?= ffdl
+DOCKER_PULL_POLICY ?= IfNotPresent
+DLAAS_LEARNER_REGISTRY ?= ${DOCKER_REPO}/${DOCKER_NAMESPACE}
+
+## DOCKER_IMG_NAME must be set by enclosing Makefile.
+DOCKER_IMG_NAME ?= "VALUE_MUST_BE_SET_BY_ENCLOSING_MAKEFILE!"
+
+show_docker_vars:
+	@echo DOCKER_IMG_NAME=${DOCKER_IMG_NAME}
+	@echo DOCKER_BX_NS=${DOCKER_BX_NS}
+	@echo DOCKER_REPO=${DOCKER_REPO}
+	@echo DOCKER_REPO_USER=${DOCKER_REPO_USER}
+	@echo DOCKER_REPO_PASS=${DOCKER_REPO_PASS}
+	@echo DOCKER_REPO_DIR=${DOCKER_REPO_DIR}
+	@echo DOCKER_NAMESPACE=${DOCKER_NAMESPACE}
+	@echo DOCKER_PULL_POLICY=${DOCKER_PULL_POLICY}
+	@echo DLAAS_LEARNER_REGISTRY=${DLAAS_LEARNER_REGISTRY}
+	@echo DOCKER_IMG_NAME=${DOCKER_IMG_NAME}
+	@echo SERVICE_IMAGES=${SERVICE_IMAGES}
+
+REPOS_CORE_FFDL_SERVICE ?= "ffdl-lcm ffdl-model-metrics ffdl-trainer"
+REPOS_CORE_FFDL ?= ${REPOS_CORE_FFDL_SERVICE} "ffdl-job-monitor"
+REPOS_ALL_SERVICE ?= ${REPOS_CORE_FFDL_SERVICE} "ffdl-rest-apis"
+REPOS_ALL ?= ${REPOS_CORE_FFDL} "ffdl-commons ffdl-e2e-test ffdl-rest-apis"
+
+show_repos:
+	@echo REPOS_CORE_FFDL_SERVICE=${REPOS_CORE_FFDL_SERVICE}
+	@echo REPOS_CORE_FFDL=${REPOS_CORE_FFDL}
+	@echo REPOS_ALL_SERVICE=${REPOS_ALL_SERVICE}
+	@echo REPOS_ALL=${REPOS_ALL}
 
 DLAAS_LEARNER_TAG?=dev_v8
 
@@ -98,6 +161,15 @@ DLAAS_HOST?=$(shell env DLAAS_KUBE_CONTEXT=$(DLAAS_SERVICES_KUBE_CONTEXT) ./bin/
 
 # The target host for the grpc cli.
 DLAAS_GRPC?=$(shell env DLAAS_KUBE_CONTEXT=$(DLAAS_SERVICES_KUBE_CONTEXT) ./bin/kubecontext.sh trainer-url)
+
+# Define environment variables for unit and integration testing
+DLAAS_MONGO_PORT ?= 27017
+
+#these credentials should be the same as what are present in lcm-secrets
+DLAAS_ETCD_ADDRESS=https://watson-dev3-dal10-10.compose.direct:15232,https://watson-dev3-dal10-9.compose.direct:15232
+DLAAS_ETCD_USERNAME=root
+DLAAS_ETCD_PASSWORD=RHDACXYDLMIXXPEE
+DLAAS_ETCD_PREFIX=/dlaas/jobs/local_hybrid/
 
 LEARNER_DEPLOYMENT_ARGS = DLAAS_LEARNER_KUBE_URL=$(DLAAS_LEARNER_KUBE_URL) \
                           DLAAS_LEARNER_KUBE_TOKEN=$(DLAAS_LEARNER_KUBE_TOKEN) \
@@ -147,28 +219,12 @@ TDS_LOCATION ?= vendor/github.com/AISphere/ffdl-model-metrics
 TDS_SUBDIR ?= service/grpc_training_data_v1
 TDS_FNAME ?= training_data
 
-vet:
-	go vet $(shell glide nv)
-
-lint:               ## Run the code linter
-	go list ./... | grep -v /vendor/ | grep -v /grpc_trainer_v2 | xargs -L1 golint -set_exit_status
-
-glide-update:               ## Run full glide rebuild
-	glide up; \
-
-glide-clean:               ## Run full glide rebuild
-	glide cache-clear; \
-	rm -rf vendor;
-
-glide-install:               ## Run full glide rebuild
-	glide install
-
-build-grpc-health-checker:
-	(cd vendor/github.com/AISphere/ffdl-commons/grpc-health-checker && make build-x86-64)
-
 protoc-trainer:  ## Make the trainer protoc client, depends on `make glide` being run first
 	#	rm -rf $(TRAINER_LOCATION)/$(TRAINER_SUBDIR)
 	wget https://$(TRAINER_REPO)/$(TRAINER_VERSION)/$(TRAINER_SUBDIR_IN)/$(TRAINER_FNAME).proto -P $(TRAINER_LOCATION)/$(TRAINER_SUBDIR)
+	wget https://$(TRAINER_REPO)/$(TRAINER_VERSION)/client/client.go -P $(TRAINER_LOCATION)/client
+	wget https://$(TRAINER_REPO)/$(TRAINER_VERSION)/client/jobstatus_client.go -P $(TRAINER_LOCATION)/client
+	wget https://$(TRAINER_REPO)/$(TRAINER_VERSION)/client/training_status.go -P $(TRAINER_LOCATION)/client
 	cd ./$(TRAINER_LOCATION); \
 	protoc -I./$(TRAINER_SUBDIR) --go_out=plugins=grpc:$(TRAINER_SUBDIR) ./$(TRAINER_SUBDIR)/$(TRAINER_FNAME).proto
 	@# At the time of writing, protoc does not support custom tags, hence use a little regex to add "bson:..." tags
@@ -200,6 +256,37 @@ protoc-tds:  ## Make the training-data service protoc client, depends on `make g
 	cd $(TDS_LOCATION); \
 	sed -i .bak '/.*bson:.*/! s/json:"\([^"]*\)"/json:"\1" bson:"\1"/' ./$(TDS_SUBDIR)/$(TDS_FNAME).pb.go
 
+vet:
+	go vet $(shell glide nv)
+
+lint:               ## Run the code linter
+	go list ./... | grep -v /vendor/ | grep -v /grpc_trainer_v2 | xargs -L1 golint -set_exit_status
+
+glide-update:               ## Run full glide rebuild
+	glide up; \
+
+glide-clean:               ## Run full glide rebuild
+	glide cache-clear; \
+	rm -rf vendor;
+
+glide-install:               ## Run full glide rebuild
+	glide install
+
 install-deps: glide-update glide-clean glide-install
 
-# Well, hell, I'll change it again.  Ok, this is getting crazy.  What is going on?
+build-grpc-health-checker:
+	(cd vendor/github.com/AISphere/ffdl-commons/grpc-health-checker && make build-x86-64)
+
+kube-artifacts:    ## Show the state of various Kubernetes artifacts
+	kubectl $(KUBE_SERVICES_CONTEXT_ARGS) get pod,configmap,svc,ing,statefulset,job,pvc,deploy,secret -o wide --show-all
+	#@echo; echo
+	#kubectl $(KUBE_LEARNER_CONTEXT_ARGS) get deploy,statefulset,pod,pvc -o wide --show-all
+
+kube-destroy:
+	@echo "If you're sure you want to delete the $(DLAAS_SERVICES_KUBE_NAMESPACE)" namespace, run the following command:
+	@echo "  kubectl $(KUBE_SERVICES_CONTEXT_ARGS) delete namespace $(DLAAS_SERVICES_KUBE_NAMESPACE)"
+
+clean:
+	rm -rf vendor
+
+.PHONY: all vet lint clean doctor usage showvars test-unit
