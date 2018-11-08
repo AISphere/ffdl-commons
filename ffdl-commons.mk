@@ -142,10 +142,10 @@ show_docker_vars:
 	@echo DOCKER_IMG_NAME=${DOCKER_IMG_NAME}
 	@echo SERVICE_IMAGES=${SERVICE_IMAGES}
 
-REPOS_CORE_FFDL_SERVICE ?= "ffdl-lcm ffdl-model-metrics ffdl-trainer"
-REPOS_CORE_FFDL ?= ${REPOS_CORE_FFDL_SERVICE} "ffdl-job-monitor"
-REPOS_ALL_SERVICE ?= ${REPOS_CORE_FFDL_SERVICE} "ffdl-rest-apis"
-REPOS_ALL ?= ${REPOS_CORE_FFDL} "ffdl-commons ffdl-e2e-test ffdl-rest-apis"
+REPOS_CORE_FFDL_SERVICE ?= ffdl-lcm ffdl-model-metrics ffdl-trainer
+REPOS_CORE_FFDL ?= ${REPOS_CORE_FFDL_SERVICE} ffdl-job-monitor
+REPOS_ALL_SERVICE ?= ${REPOS_CORE_FFDL_SERVICE} ffdl-rest-apis
+REPOS_ALL ?= ${REPOS_CORE_FFDL} ffdl-commons ffdl-e2e-test ffdl-rest-apis
 
 show_repos:
 	@echo REPOS_CORE_FFDL_SERVICE=${REPOS_CORE_FFDL_SERVICE}
@@ -194,6 +194,12 @@ DEPLOYMENT_ARGS = DLAAS_ENV=$(DLAAS_ENV) $(LEARNER_DEPLOYMENT_ARGS) \
 BUILD_DIR=build
 
 THIS_DIR := $(dir $(abspath $(lastword $(MAKEFILE_LIST))))
+AISPHERE_DIR ?= $(shell dirname "$(THIS_DIR)")
+
+show_dirs:
+	@echo MAKEFILE_LIST=${MAKEFILE_LIST}
+	@echo THIS_DIR=${THIS_DIR}
+	@echo AISPHERE_DIR=${AISPHERE_DIR}
 
 usage:              ## Show this help
 	@fgrep -h " ## " $(MAKEFILE_LIST) | fgrep -v fgrep | sed -e 's/\\$$//' | sed -e 's/##//'
@@ -286,7 +292,26 @@ kube-destroy:
 	@echo "If you're sure you want to delete the $(DLAAS_SERVICES_KUBE_NAMESPACE)" namespace, run the following command:
 	@echo "  kubectl $(KUBE_SERVICES_CONTEXT_ARGS) delete namespace $(DLAAS_SERVICES_KUBE_NAMESPACE)"
 
-clean:
+docker-build-x: build-x86-64
+	cd vendor/github.com/AISphere/ffdl-commons/grpc-health-checker && make build-x86-64
+	(docker build --label git-commit=$(shell git rev-list -1 HEAD) -t "$(DOCKER_BX_NS)/$(DOCKER_IMG_NAME):$(DLAAS_IMAGE_TAG)" .)
+
+docker-build-all:
+	@for x in ${REPOS_CORE_FFDL}; do \
+		echo building ${AISPHERE_DIR}/$$x; \
+		cd ${AISPHERE_DIR}/$$x; \
+		make install-deps protoc docker-build-x; \
+	done
+
+clean-all:
+	@for x in ${REPOS_CORE_FFDL}; do \
+		echo cleaning ${AISPHERE_DIR}/$$x; \
+		cd ${AISPHERE_DIR}/$$x; \
+		rm ffdl-commons.mk
+		make clean-base; \
+	done
+
+clean-base:
 	rm -rf vendor
 
 .PHONY: all vet lint clean doctor usage showvars test-unit

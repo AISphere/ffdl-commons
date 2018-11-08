@@ -23,3 +23,7 @@ glide:               ## Run full glide rebuild
 	rm -rf vendor; \
 	glide install
 
+loop_test:
+	for x in ${REPOS_CORE_FFDL}; do \
+		echo x: $$x; \
+	done
