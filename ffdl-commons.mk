@@ -292,8 +292,13 @@ kube-destroy:
 	@echo "If you're sure you want to delete the $(DLAAS_SERVICES_KUBE_NAMESPACE)" namespace, run the following command:
 	@echo "  kubectl $(KUBE_SERVICES_CONTEXT_ARGS) delete namespace $(DLAAS_SERVICES_KUBE_NAMESPACE)"
 
-docker-build-x: build-x86-64
+build-x86-64:
+	(CGO_ENABLED=0 GOOS=linux go build -ldflags "-s" -a -installsuffix cgo -o bin/main)
+
+build-base:
 	cd vendor/github.com/AISphere/ffdl-commons/grpc-health-checker && make build-x86-64
+
+docker-build: build-base build-x86-64
 	(docker build --label git-commit=$(shell git rev-list -1 HEAD) -t "$(DOCKER_BX_NS)/$(DOCKER_IMG_NAME):$(DLAAS_IMAGE_TAG)" .)
 
 docker-build-all:
