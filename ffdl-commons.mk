@@ -278,7 +278,7 @@ glide-clean:               ## Run full glide rebuild
 glide-install:               ## Run full glide rebuild
 	glide install
 
-install-deps: glide-update glide-clean glide-install
+install-deps-base: glide-update glide-clean glide-install
 
 build-grpc-health-checker:
 	(cd vendor/github.com/AISphere/ffdl-commons/grpc-health-checker && make build-x86-64)
@@ -295,18 +295,54 @@ kube-destroy:
 build-x86-64:
 	(CGO_ENABLED=0 GOOS=linux go build -ldflags "-s" -a -installsuffix cgo -o bin/main)
 
-build-base:
+build-grpc-health-checker:
 	cd vendor/github.com/AISphere/ffdl-commons/grpc-health-checker && make build-x86-64
 
-docker-build: build-base build-x86-64
+docker-build-base: build-grpc-health-checker build-x86-64
 	(docker build --label git-commit=$(shell git rev-list -1 HEAD) -t "$(DOCKER_BX_NS)/$(DOCKER_IMG_NAME):$(DLAAS_IMAGE_TAG)" .)
 
 docker-build-all:
 	@for x in ${REPOS_CORE_FFDL}; do \
 		echo building ${AISPHERE_DIR}/$$x; \
 		cd ${AISPHERE_DIR}/$$x; \
-		make install-deps protoc docker-build-x; \
+		make install-deps protoc docker-build; \
 	done
+
+# Runs all unit tests (short tests)
+test-unit:          ## Run unit tests
+	DLAAS_LOGLEVEL=debug DLAAS_DNS_SERVER=disabled DLAAS_ENV=local go test $(TEST_PKGS) -v -short
+
+test-integration:  ## Run all integration tests (non-short tests with Integration in the name)
+	DLAAS_LOGLEVEL=debug DLAAS_DNS_SERVER=disabled DLAAS_ENV=local  go test $(TEST_PKGS) -run "Integration" -v
+
+test-base: test-unit test-integration
+
+# This list is the union of needs for all services in this Makefile
+DEPLOY_EXTRA_VARS = --extra-vars "service_version=$(DLAAS_IMAGE_TAG)" \
+		--extra-vars "DLAAS_NAMESPACE=$(DLAAS_SERVICES_KUBE_NAMESPACE)" \
+		--extra-vars "DLAAS_LEARNER_KUBE_NAMESPACE=$(DLAAS_LEARNER_KUBE_NAMESPACE)" \
+		--extra-vars "DLAAS_LEARNER_KUBE_URL=$(DLAAS_LEARNER_KUBE_URL)" \
+		--extra-vars "dlaas_learner_tag=$(DLAAS_LEARNER_TAG)" \
+		--extra-vars "eureka_name=$(DLAAS_EUREKA_NAME)"
+
+devstack-start: sv-setup   ## Start up the local dev stack
+	-docker login -u token -p `cat certs/bluemix-cr-ng-token` registry.ng.bluemix.net
+	-kubectl create secret docker-registry bluemix-cr-ng --docker-username token --docker-password `cat certs/bluemix-cr-ng-token` --docker-server registry.ng.bluemix.net --docker-email wps@us.ibm.com
+	ANSIBLE_HOST_KEY_CHECKING=False ANSIBLE_ROLES_PATH=$(THIS_DIR)/ansible/roles \
+		ansible-playbook -b -i $(INVENTORY) ansible/plays/ffdl-devstack-k8s.yml \
+		-c local \
+		--extra-vars "service=mongo" \
+		$(DEPLOY_EXTRA_VARS)
+	bin/copy_learner_config.sh devwat-dal13-cruiser15-dlaas $(DLAAS_SERVICES_KUBE_CONTEXT)
+#	(cd $(TRAINER_SERVICE) && make devstack-start)
+
+devstack-stop:
+	-kubectl $(KUBE_SERVICES_CONTEXT_ARGS) delete service mongo --ignore-not-found=true --now
+	-kubectl $(KUBE_SERVICES_CONTEXT_ARGS) delete statefulset mongo-deployment --ignore-not-found=true --now
+	-kubectl $(KUBE_SERVICES_CONTEXT_ARGS) delete configmap learner-config --ignore-not-found=true --now
+#	(cd $(TRAINER_SERVICE) && make devstack-stop)
+
+devstack-restart: devstack-stop devstack-start
 
 clean-all:
 	@for x in ${REPOS_CORE_FFDL}; do \
