@@ -138,7 +138,7 @@ LCM_REPO ?= raw.githubusercontent.com/sboagibm/ffdl-lcm
 LCM_VERSION ?= branch2
 LCM_LOCATION ?= vendor/github.com/AISphere/ffdl-lcm
 LCM_SUBDIR ?= service
-LCM_SUBDIR_IN ?= service/grpc
+LCM_SUBDIR_IN ?= service/grpc_training_data_v1
 LCM_FNAME ?= lcm
 
 TDS_REPO ?= raw.githubusercontent.com/AISphere/ffdl-model-metrics
@@ -179,7 +179,10 @@ protoc-trainer:  ## Make the trainer protoc client, depends on `make glide` bein
 protoc-lcm:  ## Make the lcm protoc client, depends on `make glide` being run first
 	#	rm -rf $(LCM_LOCATION)/$(LCM_SUBDIR)
 	wget https://$(LCM_REPO)/$(LCM_VERSION)/$(LCM_SUBDIR_IN)/$(LCM_FNAME).proto -P $(LCM_LOCATION)/$(LCM_SUBDIR)
-	wget https://$(LCM_REPO)/$(LCM_VERSION)/service/lifecycle.go -P $(LCM_LOCATION)/service
+	wget https://$(LCM_REPO)/$(LCM_VERSION)/service/grpc_training_data_v1/client/lcm.go -P $(LCM_LOCATION)/service/grpc_training_data_v1/client
+	wget https://$(LCM_REPO)/$(LCM_VERSION)/service/grpc_training_data_v1/lifecycle.go -P $(LCM_LOCATION)/service/grpc_training_data_v1
+	wget https://$(LCM_REPO)/$(LCM_VERSION)/lcmconfig/lcmconfig.go -P $(LCM_LOCATION)/lcmconfig
+	wget https://$(LCM_REPO)/$(LCM_VERSION)/coord/coord.go -P $(LCM_LOCATION)/coord
 	cd ./$(LCM_LOCATION); \
 	protoc -I./$(LCM_SUBDIR) --go_out=plugins=grpc:$(LCM_SUBDIR) ./$(LCM_SUBDIR)/$(LCM_FNAME).proto
 	@# At the time of writing, protoc does not support custom tags, hence use a little regex to add "bson:..." tags
@@ -198,3 +201,5 @@ protoc-tds:  ## Make the training-data service protoc client, depends on `make g
 	sed -i .bak '/.*bson:.*/! s/json:"\([^"]*\)"/json:"\1" bson:"\1"/' ./$(TDS_SUBDIR)/$(TDS_FNAME).pb.go
 
 install-deps: glide-update glide-clean glide-install
+
+# Hello, this is a change.
