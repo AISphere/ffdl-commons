@@ -193,7 +193,7 @@ DEPLOYMENT_ARGS = DLAAS_ENV=$(DLAAS_ENV) $(LEARNER_DEPLOYMENT_ARGS) \
 
 BUILD_DIR=build
 
-THIS_DIR := $(dir $(abspath $(lastword $(MAKEFILE_LIST))))
+THIS_DIR = $(dir $(abspath $(lastword $(MAKEFILE_LIST))))
 AISPHERE_DIR ?= $(shell dirname "$(THIS_DIR)")
 
 show_dirs:
@@ -371,7 +371,7 @@ endif
 test: test-base
 
 git-branch-status:           ## Show this repos branch status
-	@CURRENTPROJ=`basename ${THIS_DIR}`; \
+	@CURRENTPROJ=`basename $(shell pwd)`; \
 	CURRENTBRANCH=`git branch | sed -n '/\* /s///p'`; \
 	if [ "$$CURRENTBRANCH" != "master" ]; then \
 		printf "# ------- %24s %s -------\n" "$$CURRENTBRANCH" "$$CURRENTPROJ"; \
