@@ -204,6 +204,8 @@ show_dirs:
 usage:                       ## Show this help
 	@fgrep -h " ## " $(MAKEFILE_LIST) | fgrep -v fgrep | sed -e 's/\\$$//' | sed -e 's/##//'
 
+help: usage                  ## Show this help
+
 TRAINER_REPO ?= raw.githubusercontent.com/sboagibm/ffdl-trainer
 TRAINER_VERSION ?= proto-only-depend
 TRAINER_LOCATION ?= vendor/github.com/AISphere/ffdl-trainer
@@ -370,7 +372,6 @@ test: test-base
 
 git-branch-status:           ## Show this repos branch status
 	@CURRENTPROJ=`basename ${THIS_DIR}`; \
-	echo $$CURRENTPROJ; \
 	CURRENTBRANCH=`git branch | sed -n '/\* /s///p'`; \
 	if [ "$$CURRENTBRANCH" != "master" ]; then \
 		printf "# ------- %24s %s -------\n" "$$CURRENTBRANCH" "$$CURRENTPROJ"; \
@@ -423,5 +424,7 @@ all-clean:                   ## Clean artifacts from all ffdl repos
 	echo cleaning ${AISPHERE_DIR}/ffdl-commons; \
 	cd ${AISPHERE_DIR}/ffdl-commons; \
 	make clean
+
+all: all-docker-build        ## Build and (re)deploy everything
 
 .PHONY: all vet lint clean doctor usage showvars test-unit
