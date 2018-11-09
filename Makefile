@@ -18,6 +18,6 @@ DOCKER_IMG_NAME="no_image!"
 
 include ffdl-commons.mk
 
-install-deps: install-deps-base
+install-deps: install-deps-base        ## Remove vendor directory, rebuild dependencies
 
-clean: clean-base
+clean: clean-base                      ## clean all build artifacts

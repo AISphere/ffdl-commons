@@ -126,7 +126,7 @@ DOCKER_NAMESPACE ?= ffdl
 DOCKER_PULL_POLICY ?= IfNotPresent
 DLAAS_LEARNER_REGISTRY ?= ${DOCKER_REPO}/${DOCKER_NAMESPACE}
 
-## DOCKER_IMG_NAME must be set by enclosing Makefile.
+# DOCKER_IMG_NAME must be set by enclosing Makefile.
 DOCKER_IMG_NAME ?= "VALUE_MUST_BE_SET_BY_ENCLOSING_MAKEFILE!"
 
 show_docker_vars:
@@ -201,7 +201,7 @@ show_dirs:
 	@echo THIS_DIR=${THIS_DIR}
 	@echo AISPHERE_DIR=${AISPHERE_DIR}
 
-usage:              ## Show this help
+usage:                       ## Show this help
 	@fgrep -h " ## " $(MAKEFILE_LIST) | fgrep -v fgrep | sed -e 's/\\$$//' | sed -e 's/##//'
 
 TRAINER_REPO ?= raw.githubusercontent.com/sboagibm/ffdl-trainer
@@ -225,7 +225,7 @@ TDS_LOCATION ?= vendor/github.com/AISphere/ffdl-model-metrics
 TDS_SUBDIR ?= service/grpc_training_data_v1
 TDS_FNAME ?= training_data
 
-protoc-trainer:  ## Make the trainer protoc client, depends on `make glide` being run first
+protoc-trainer:              ## Make the trainer protoc client, depends on `make glide` being run first
 	#	rm -rf $(TRAINER_LOCATION)/$(TRAINER_SUBDIR)
 	wget https://$(TRAINER_REPO)/$(TRAINER_VERSION)/$(TRAINER_SUBDIR_IN)/$(TRAINER_FNAME).proto -P $(TRAINER_LOCATION)/$(TRAINER_SUBDIR)
 	wget https://$(TRAINER_REPO)/$(TRAINER_VERSION)/client/client.go -P $(TRAINER_LOCATION)/client
@@ -238,7 +238,7 @@ protoc-trainer:  ## Make the trainer protoc client, depends on `make glide` bein
 	cd $(TRAINER_LOCATION); \
 	sed -i .bak '/.*bson:.*/! s/json:"\([^"]*\)"/json:"\1" bson:"\1"/' ./$(TRAINER_SUBDIR)/$(TRAINER_FNAME).pb.go
 
-protoc-lcm:  ## Make the lcm protoc client, depends on `make glide` being run first
+protoc-lcm:                  ## Make the lcm protoc client, depends on `make glide` being run first
 	#	rm -rf $(LCM_LOCATION)/$(LCM_SUBDIR)
 	wget https://$(LCM_REPO)/$(LCM_VERSION)/$(LCM_SUBDIR_IN)/$(LCM_FNAME).proto -P $(LCM_LOCATION)/$(LCM_SUBDIR)
 	wget https://$(LCM_REPO)/$(LCM_VERSION)/service/client/lcm.go -P $(LCM_LOCATION)/service/client
@@ -252,7 +252,7 @@ protoc-lcm:  ## Make the lcm protoc client, depends on `make glide` being run fi
 	cd $(LCM_LOCATION); \
 	sed -i .bak '/.*bson:.*/! s/json:"\([^"]*\)"/json:"\1" bson:"\1"/' ./$(LCM_SUBDIR)/$(LCM_FNAME).pb.go
 
-protoc-tds:  ## Make the training-data service protoc client, depends on `make glide` being run first
+protoc-tds:                  ## Make the training-data service protoc client, depends on `make glide` being run first
 	rm -rf $(TDS_LOCATION)/$(TDS_SUBDIR)
 	wget https://$(TDS_REPO)/$(TDS_VERSION)/$(TDS_SUBDIR)/$(TDS_FNAME).proto -P $(TDS_LOCATION)/$(TDS_SUBDIR)
 	cd ./$(TDS_LOCATION); \
@@ -262,33 +262,19 @@ protoc-tds:  ## Make the training-data service protoc client, depends on `make g
 	cd $(TDS_LOCATION); \
 	sed -i .bak '/.*bson:.*/! s/json:"\([^"]*\)"/json:"\1" bson:"\1"/' ./$(TDS_SUBDIR)/$(TDS_FNAME).pb.go
 
-vet:
+vet:                         ## go vet
 	go vet $(shell glide nv)
 
-lint:               ## Run the code linter
+lint:                        ## Run the code linter
 	go list ./... | grep -v /vendor/ | grep -v /grpc_trainer_v2 | xargs -L1 golint -set_exit_status
 
-lint-all:
-	@for x in ${REPOS_CORE_FFDL}; do \
-		echo lint ${AISPHERE_DIR}/$$x; \
-		cd ${AISPHERE_DIR}/$$x; \
-		make vet lint; \
-	done
-
-glide-update:               ## Run full glide rebuild
+glide-update:                ## Run full glide rebuild
 	glide up; \
 
-glide-update-all:
-	@for x in ${REPOS_CORE_FFDL}; do \
-		echo glide-update ${AISPHERE_DIR}/$$x; \
-		cd ${AISPHERE_DIR}/$$x; \
-		make glide-update; \
-	done
-
-glide-cache-clear:               ## Run clear the glide cache
+glide-cache-clear:           ## Run clear the glide cache
 	glide cache-clear; \
 
-glide-clean:               ## Run full glide rebuild
+glide-clean:                 ## Run full glide rebuild
 	rm -rf vendor;
 
 glide-install:               ## Run full glide rebuild
@@ -296,24 +282,16 @@ glide-install:               ## Run full glide rebuild
 
 install-deps-base: glide-clean glide-install
 
-install-deps-all:
-	@for x in ${REPOS_CORE_FFDL}; do \
-		echo install-deps ${AISPHERE_DIR}/$$x; \
-		cd ${AISPHERE_DIR}/$$x; \
-		make install-deps; \
-	done
-
 install-deps-if-needed:
 	if [ ! -d "vendor" ]; then \
 		make install-deps; \
 	fi \
 
-
 build-grpc-health-checker:
 	@cd vendor/github.com/AISphere/ffdl-commons/grpc-health-checker; \
 	make build-x86-64
 
-kube-artifacts:    ## Show the state of various Kubernetes artifacts
+kube-artifacts:              ## Show the state of various Kubernetes artifacts
 	kubectl $(KUBE_SERVICES_CONTEXT_ARGS) get pod,configmap,svc,ing,statefulset,job,pvc,deploy,secret -o wide --show-all
 	#@echo; echo
 	#kubectl $(KUBE_LEARNER_CONTEXT_ARGS) get deploy,statefulset,pod,pvc -o wide --show-all
@@ -322,7 +300,7 @@ kube-destroy:
 	@echo "If you're sure you want to delete the $(DLAAS_SERVICES_KUBE_NAMESPACE)" namespace, run the following command:
 	@echo "  kubectl $(KUBE_SERVICES_CONTEXT_ARGS) delete namespace $(DLAAS_SERVICES_KUBE_NAMESPACE)"
 
-build-x86-64:
+build-x86-64:                ## Install dependencies if needed, compile go code
 	if [ ! -d "vendor" ]; then \
 		make install-deps; \
 	fi; \
@@ -335,18 +313,11 @@ docker-build-base-only: install-deps-if-needed build-x86-64 docker-build-only
 
 docker-build-base: install-deps-if-needed build-grpc-health-checker build-x86-64 docker-build-only
 
-docker-build-all:
-	@for x in ${REPOS_CORE_FFDL}; do \
-		echo building ${AISPHERE_DIR}/$$x; \
-		cd ${AISPHERE_DIR}/$$x; \
-		make docker-build; \
-	done
-
 # Runs all unit tests (short tests)
-test-unit:          ## Run unit tests
+test-unit:                   ## Run unit tests
 	DLAAS_LOGLEVEL=debug DLAAS_DNS_SERVER=disabled DLAAS_ENV=local go test $(TEST_PKGS) -v -short
 
-test-integration:  ## Run all integration tests (non-short tests with Integration in the name)
+test-integration:            ## Run all integration tests (non-short tests with Integration in the name)
 	DLAAS_LOGLEVEL=debug DLAAS_DNS_SERVER=disabled DLAAS_ENV=local  go test $(TEST_PKGS) -run "Integration" -v
 
 test-base: test-unit test-integration
@@ -359,7 +330,7 @@ DEPLOY_EXTRA_VARS = --extra-vars "service_version=$(DLAAS_IMAGE_TAG)" \
 		--extra-vars "dlaas_learner_tag=$(DLAAS_LEARNER_TAG)" \
 		--extra-vars "eureka_name=$(DLAAS_EUREKA_NAME)"
 
-devstack-start: sv-setup   ## Start up the local dev stack
+devstack-start: sv-setup     ## Start up the local dev stack
 	-docker login -u token -p `cat certs/bluemix-cr-ng-token` registry.ng.bluemix.net
 	-kubectl create secret docker-registry bluemix-cr-ng --docker-username token --docker-password `cat certs/bluemix-cr-ng-token` --docker-server registry.ng.bluemix.net --docker-email wps@us.ibm.com
 	ANSIBLE_HOST_KEY_CHECKING=False ANSIBLE_ROLES_PATH=$(THIS_DIR)/ansible/roles \
@@ -378,7 +349,72 @@ devstack-stop:
 
 devstack-restart: devstack-stop devstack-start
 
-clean-all:
+test-start-deps:             ## Start test dependencies
+	docker run -d -p $(DLAAS_MONGO_PORT):27017 --name mongo mongo:3.0
+
+# Stop test dependencies
+test-stop-deps:
+	-docker rm -f mongo
+
+TEST_PKGS ?= $(shell go list ./... | grep -v /vendor/)
+
+# Add a route on OS X to access docker instances directly
+#
+route-add-osx:
+ifeq ($(shell uname -s),Darwin)
+	sudo route -n add -net 172.17.0.0 $(DOCKERHOST_HOST)
+endif
+
+# Runs unit and integration tests
+test: test-base
+
+git-branch-status:           ## Show this repos branch status
+	@CURRENTPROJ=`basename ${THIS_DIR}`; \
+	echo $$CURRENTPROJ; \
+	CURRENTBRANCH=`git branch | sed -n '/\* /s///p'`; \
+	if [ "$$CURRENTBRANCH" != "master" ]; then \
+		printf "# ------- %24s %s -------\n" "$$CURRENTBRANCH" "$$CURRENTPROJ"; \
+		git status -s -uno; \
+	fi
+
+clean-base:
+	rm -rf vendor
+
+all-lint:                    ## Call vet and lint for all ffdl repos
+	@for x in ${REPOS_CORE_FFDL}; do \
+		echo lint ${AISPHERE_DIR}/$$x; \
+		cd ${AISPHERE_DIR}/$$x; \
+		make vet lint; \
+	done
+
+all-glide-update:            ## Call glide-update for all ffdl repos
+	@for x in ${REPOS_CORE_FFDL}; do \
+		echo glide-update ${AISPHERE_DIR}/$$x; \
+		cd ${AISPHERE_DIR}/$$x; \
+		make glide-update; \
+	done
+
+all-install-deps:            ## Call install-deps for all ffdl repos
+	@for x in ${REPOS_CORE_FFDL}; do \
+		echo install-deps ${AISPHERE_DIR}/$$x; \
+		cd ${AISPHERE_DIR}/$$x; \
+		make install-deps; \
+	done
+
+all-docker-build:            ## Call docker-build for ffdl repos
+	@for x in ${REPOS_CORE_FFDL}; do \
+		echo building ${AISPHERE_DIR}/$$x; \
+		cd ${AISPHERE_DIR}/$$x; \
+		make docker-build; \
+	done
+
+all-git-branch-status:       ## Show branch status of all repos
+	@for x in ${REPOS_CORE_FFDL}; do \
+		cd ${AISPHERE_DIR}/$$x; \
+		make git-branch-status; \
+	done
+
+all-clean:                   ## Clean artifacts from all ffdl repos
 	@for x in ${REPOS_CORE_FFDL}; do \
 		echo cleaning ${AISPHERE_DIR}/$$x; \
 		cd ${AISPHERE_DIR}/$$x; \
@@ -387,8 +423,5 @@ clean-all:
 	echo cleaning ${AISPHERE_DIR}/ffdl-commons; \
 	cd ${AISPHERE_DIR}/ffdl-commons; \
 	make clean
-
-clean-base:
-	rm -rf vendor
 
 .PHONY: all vet lint clean doctor usage showvars test-unit
