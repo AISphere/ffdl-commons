@@ -216,7 +216,7 @@ LCM_REPO ?= raw.githubusercontent.com/sboagibm/ffdl-lcm
 LCM_VERSION ?= branch2
 LCM_LOCATION ?= vendor/github.com/AISphere/ffdl-lcm
 LCM_SUBDIR ?= service
-LCM_SUBDIR_IN ?= service/grpc_training_data_v1
+LCM_SUBDIR_IN ?= service
 LCM_FNAME ?= lcm
 
 TDS_REPO ?= raw.githubusercontent.com/AISphere/ffdl-model-metrics
@@ -241,8 +241,8 @@ protoc-trainer:  ## Make the trainer protoc client, depends on `make glide` bein
 protoc-lcm:  ## Make the lcm protoc client, depends on `make glide` being run first
 	#	rm -rf $(LCM_LOCATION)/$(LCM_SUBDIR)
 	wget https://$(LCM_REPO)/$(LCM_VERSION)/$(LCM_SUBDIR_IN)/$(LCM_FNAME).proto -P $(LCM_LOCATION)/$(LCM_SUBDIR)
-	wget https://$(LCM_REPO)/$(LCM_VERSION)/service/client/lcm.go -P $(LCM_LOCATION)/service/grpc_training_data_v1/client
-	wget https://$(LCM_REPO)/$(LCM_VERSION)/service/grpc_training_data_v1/lifecycle.go -P $(LCM_LOCATION)/service/grpc_training_data_v1
+	wget https://$(LCM_REPO)/$(LCM_VERSION)/service/client/lcm.go -P $(LCM_LOCATION)/service/client
+	wget https://$(LCM_REPO)/$(LCM_VERSION)/service/lifecycle.go -P $(LCM_LOCATION)/service
 	wget https://$(LCM_REPO)/$(LCM_VERSION)/lcmconfig/lcmconfig.go -P $(LCM_LOCATION)/lcmconfig
 	wget https://$(LCM_REPO)/$(LCM_VERSION)/coord/coord.go -P $(LCM_LOCATION)/coord
 	cd ./$(LCM_LOCATION); \
@@ -268,20 +268,50 @@ vet:
 lint:               ## Run the code linter
 	go list ./... | grep -v /vendor/ | grep -v /grpc_trainer_v2 | xargs -L1 golint -set_exit_status
 
+lint-all:
+	@for x in ${REPOS_CORE_FFDL}; do \
+		echo lint ${AISPHERE_DIR}/$$x; \
+		cd ${AISPHERE_DIR}/$$x; \
+		make vet lint; \
+	done
+
 glide-update:               ## Run full glide rebuild
 	glide up; \
 
-glide-clean:               ## Run full glide rebuild
+glide-update-all:
+	@for x in ${REPOS_CORE_FFDL}; do \
+		echo glide-update ${AISPHERE_DIR}/$$x; \
+		cd ${AISPHERE_DIR}/$$x; \
+		make glide-update; \
+	done
+
+glide-cache-clear:               ## Run clear the glide cache
 	glide cache-clear; \
+
+glide-clean:               ## Run full glide rebuild
 	rm -rf vendor;
 
 glide-install:               ## Run full glide rebuild
 	glide install
 
-install-deps-base: glide-update glide-clean glide-install
+install-deps-base: glide-clean glide-install
+
+install-deps-all:
+	@for x in ${REPOS_CORE_FFDL}; do \
+		echo install-deps ${AISPHERE_DIR}/$$x; \
+		cd ${AISPHERE_DIR}/$$x; \
+		make install-deps; \
+	done
+
+install-deps-if-needed:
+	if [ ! -d "vendor" ]; then \
+		make install-deps; \
+	fi \
+
 
 build-grpc-health-checker:
-	(cd vendor/github.com/AISphere/ffdl-commons/grpc-health-checker && make build-x86-64)
+	@cd vendor/github.com/AISphere/ffdl-commons/grpc-health-checker; \
+	make build-x86-64
 
 kube-artifacts:    ## Show the state of various Kubernetes artifacts
 	kubectl $(KUBE_SERVICES_CONTEXT_ARGS) get pod,configmap,svc,ing,statefulset,job,pvc,deploy,secret -o wide --show-all
@@ -293,19 +323,23 @@ kube-destroy:
 	@echo "  kubectl $(KUBE_SERVICES_CONTEXT_ARGS) delete namespace $(DLAAS_SERVICES_KUBE_NAMESPACE)"
 
 build-x86-64:
+	if [ ! -d "vendor" ]; then \
+		make install-deps; \
+	fi; \
 	(CGO_ENABLED=0 GOOS=linux go build -ldflags "-s" -a -installsuffix cgo -o bin/main)
 
-build-grpc-health-checker:
-	cd vendor/github.com/AISphere/ffdl-commons/grpc-health-checker && make build-x86-64
-
-docker-build-base: build-grpc-health-checker build-x86-64
+docker-build-only:
 	(docker build --label git-commit=$(shell git rev-list -1 HEAD) -t "$(DOCKER_BX_NS)/$(DOCKER_IMG_NAME):$(DLAAS_IMAGE_TAG)" .)
+
+docker-build-base-only: install-deps-if-needed build-x86-64 docker-build-only
+
+docker-build-base: install-deps-if-needed build-grpc-health-checker build-x86-64 docker-build-only
 
 docker-build-all:
 	@for x in ${REPOS_CORE_FFDL}; do \
 		echo building ${AISPHERE_DIR}/$$x; \
 		cd ${AISPHERE_DIR}/$$x; \
-		make install-deps protoc docker-build; \
+		make docker-build; \
 	done
 
 # Runs all unit tests (short tests)
@@ -348,9 +382,11 @@ clean-all:
 	@for x in ${REPOS_CORE_FFDL}; do \
 		echo cleaning ${AISPHERE_DIR}/$$x; \
 		cd ${AISPHERE_DIR}/$$x; \
-		rm ffdl-commons.mk; \
-		make clean-base; \
-	done
+		make clean; \
+	done; \
+	echo cleaning ${AISPHERE_DIR}/ffdl-commons; \
+	cd ${AISPHERE_DIR}/ffdl-commons; \
+	make clean
 
 clean-base:
 	rm -rf vendor

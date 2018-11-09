@@ -18,12 +18,6 @@ DOCKER_IMG_NAME="no_image!"
 
 include ffdl-commons.mk
 
-glide:               ## Run full glide rebuild
-	glide cache-clear; \
-	rm -rf vendor; \
-	glide install
+install-deps: install-deps-base
 
-loop_test:
-	for x in ${REPOS_CORE_FFDL}; do \
-		echo x: $$x; \
-	done
+clean: clean-base
