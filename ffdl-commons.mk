@@ -142,15 +142,21 @@ show_docker_vars:
 	@echo DOCKER_IMG_NAME=${DOCKER_IMG_NAME}
 	@echo SERVICE_IMAGES=${SERVICE_IMAGES}
 
+REPOS_COMMONS = ffdl-commons
+REPOS_RESTAPIS ?= ffdl-rest-apis
+REPOS_APITESTS ?= "ffdl-e2e-test"
 REPOS_CORE_FFDL_SERVICE ?= ffdl-lcm ffdl-model-metrics ffdl-trainer
 REPOS_CORE_FFDL ?= ${REPOS_CORE_FFDL_SERVICE} ffdl-job-monitor
-REPOS_ALL_SERVICE ?= ${REPOS_CORE_FFDL_SERVICE} ffdl-rest-apis
-REPOS_ALL ?= ${REPOS_CORE_FFDL} ffdl-commons ffdl-e2e-test ffdl-rest-apis
+REPOS_ALL_SERVICE ?= ${REPOS_CORE_FFDL_SERVICE} ${REPOS_RESTAPIS}
+REPOS_ALL_CERT_REPOS ?= ${REPOS_CORE_FFDL} ${REPOS_RESTAPIS}
+REPOS_ALL ?= ${REPOS_CORE_FFDL} ffdl-commons
+# ${REPOS_APITESTS} ${REPOS_RESTAPIS}
 
 show_repos:
 	@echo REPOS_CORE_FFDL_SERVICE=${REPOS_CORE_FFDL_SERVICE}
 	@echo REPOS_CORE_FFDL=${REPOS_CORE_FFDL}
 	@echo REPOS_ALL_SERVICE=${REPOS_ALL_SERVICE}
+	@echo REPOS_ALL_CERT_REPOS=${REPOS_ALL_CERT_REPOS}
 	@echo REPOS_ALL=${REPOS_ALL}
 
 DLAAS_LEARNER_TAG?=dev_v8
@@ -315,6 +321,19 @@ docker-build-base-only: install-deps-if-needed build-x86-64 docker-build-only
 
 docker-build-base: install-deps-if-needed build-grpc-health-checker build-x86-64 docker-build-only
 
+docker-push-base:
+	@if [ "${DOCKER_REPO}" = "docker.io" ]; then \
+		if [[ -z "${DOCKER_REPO_USER}" ]] || [[ -z "${DOCKER_REPO_PASS}" ]] ; then \
+			echo "Please define DOCKER_REPO_USER and DOCKER_REPO_PASS."; \
+			exit 1; \
+		else \
+			docker login --username="${DOCKER_REPO_USER}" --password="${DOCKER_REPO_PASS}"; \
+			docker push "$(DOCKER_BX_NS)/$(DOCKER_IMG_NAME):$(DLAAS_IMAGE_TAG)"; \
+		fi; \
+	else \
+		docker push "$(DOCKER_BX_NS)/$(DOCKER_IMG_NAME):$(DLAAS_IMAGE_TAG)"; \
+	fi;
+
 # Runs all unit tests (short tests)
 test-unit:                   ## Run unit tests
 	DLAAS_LOGLEVEL=debug DLAAS_DNS_SERVER=disabled DLAAS_ENV=local go test $(TEST_PKGS) -v -short
@@ -378,6 +397,47 @@ git-branch-status:           ## Show this repos branch status
 		git status -s -uno; \
 	fi
 
+# GIT_FLAGS="--dry-run"
+GIT_FLAGS ?= ""
+MSG ?= "empty commit message"
+
+git-commit-push:            ## Show this repos branch status
+	@CURRENTPROJ=`basename $(shell pwd)`; \
+	CURRENTBRANCH=`git branch | sed -n '/\* /s///p'`; \
+	if [ "$$CURRENTBRANCH" != "master" ]; then \
+		printf "# ------- %24s %s -------\n" "$$CURRENTBRANCH" "$$CURRENTPROJ"; \
+		git commit -a -m "${MSG}" ; \
+		git push -f origin $$CURRENTBRANCH ; \
+	fi
+
+gen-certs-only:                            ## generate certificates
+	cd ${AISPHERE_DIR}/${REPOS_COMMONS}/certs ; \
+	./generate.sh
+
+install-certs:                             ## install certificates
+	cd ${AISPHERE_DIR}/${REPOS_COMMONS}/certs ; \
+	for x in ${REPOS_ALL_CERT_REPOS}; do \
+		dir=${AISPHERE_DIR}/$$x/certs; \
+		echo copying certs into $${dir}; \
+		mkdir -p $${dir}; \
+		cp ca.crt $${dir}; \
+		cp server.crt $${dir}; \
+		cp server.key $${dir}; \
+	done
+
+gen-certs: gen-certs-only install-certs    ## generate and install certificates
+
+del-certs:                                 ## delete all certificates
+	@for x in ${REPOS_ALL_CERT_REPOS}; do \
+		dir=${AISPHERE_DIR}/$$x/certs; \
+		echo deleting certs from $${dir}; \
+		rm -rf $${dir}; \
+	done; \
+	cd ${AISPHERE_DIR}/${REPOS_COMMONS}/certs ; \
+	rm -f ca.*; \
+	rm -f client.*; \
+	rm -f server.*
+
 clean-base:
 	rm -rf vendor
 
@@ -409,10 +469,23 @@ all-docker-build:            ## Call docker-build for ffdl repos
 		make docker-build; \
 	done
 
-all-git-branch-status:       ## Show branch status of all repos
+all-docker-push:            ## Call docker-build for ffdl repos
 	@for x in ${REPOS_CORE_FFDL}; do \
+		echo pushing images for ${AISPHERE_DIR}/$$x; \
+		cd ${AISPHERE_DIR}/$$x; \
+		make docker-push; \
+	done
+
+all-git-branch-status:       ## Show branch status of all repos
+	@for x in ${REPOS_ALL}; do \
 		cd ${AISPHERE_DIR}/$$x; \
 		make git-branch-status; \
+	done
+
+all-git-commit-push:       ## Show branch status of all repos
+	@for x in ${REPOS_ALL}; do \
+		cd ${AISPHERE_DIR}/$$x; \
+		make git-commit-push; \
 	done
 
 all-clean:                   ## Clean artifacts from all ffdl repos
