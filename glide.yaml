@@ -1,0 +1,48 @@
+package: github.com/AISphere/ffdl-commons
+import:
+- package: github.com/alecthomas/units
+- package: github.com/go-kit/kit
+  version: ^0.7.0
+  subpackages:
+  - log
+  - metrics
+  - metrics/prometheus
+  - metrics/statsd
+- package: github.com/golang/mock
+  version: ^1.1.1
+  subpackages:
+  - gomock
+- package: github.com/golang/protobuf
+  version: ^1.2.0
+  subpackages:
+  - proto
+- package: github.com/grpc-ecosystem/go-grpc-prometheus
+  version: ^1.2.0
+- package: github.com/prometheus/client_golang
+  version: ^0.9.1
+  subpackages:
+  - prometheus
+  - prometheus/push
+- package: github.com/sirupsen/logrus
+  version: v1.1.1
+- package: github.com/sony/gobreaker
+  version: ^0.4.0
+- package: github.com/spf13/cobra
+  version: ^0.0.3
+- package: github.com/spf13/viper
+  version: ^1.2.1
+- package: golang.org/x/net
+  subpackages:
+  - context
+- package: google.golang.org/grpc
+  version: ^1.16.0
+  subpackages:
+  - credentials
+  - grpclog
+  - health
+  - health/grpc_health_v1
+testImport:
+- package: github.com/stretchr/testify
+  version: ^1.2.2
+  subpackages:
+  - assert

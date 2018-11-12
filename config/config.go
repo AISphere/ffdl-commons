@@ -574,3 +574,4 @@ func getFileAtLocation(location string) string {
 func GetPushgatewayURL() string {
 	return fmt.Sprintf("http://pushgateway:%s", "9091")
 }
+
