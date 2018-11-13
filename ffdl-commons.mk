@@ -75,12 +75,11 @@ REPOS_ALL_IN_ORG ?= $(shell curl -s https://api.github.com/orgs/AISphere/repos?p
 #DLAAS_HOST?=localhost:30001
 DLAAS_HOST?=$(shell env DLAAS_KUBE_CONTEXT=$(DLAAS_SERVICES_KUBE_CONTEXT) ./bin/kubecontext.sh restapi-url)
 
-# The target host for the grpc cli.
-DLAAS_GRPC?=$(shell env DLAAS_KUBE_CONTEXT=$(DLAAS_SERVICES_KUBE_CONTEXT) ./bin/kubecontext.sh trainer-url)
-
 THIS_DIR = $(shell pwd)
 AISPHERE_DIR ?= $(shell dirname "$(THIS_DIR)")
-HELM_DEPLOY_DIR := ${AISPHERE_DIR}/${REPO_TRAINER}/helmdeploy
+
+# The target host for the grpc cli.
+DLAAS_GRPC?=$(shell env DLAAS_KUBE_CONTEXT=$(DLAAS_SERVICES_KUBE_CONTEXT) ${AISPHERE_DIR}/${REPO_TRAINER}/bin/kubecontext.sh trainer-url)
 
 include ${AISPHERE_DIR}/ffdl-commons/ffdl-protoc.mk
 

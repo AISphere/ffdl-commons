@@ -32,6 +32,15 @@ TDS_LOCATION ?= vendor/github.com/AISphere/${REPO_TDS}
 TDS_SUBDIR ?= service/grpc_training_data_v1
 TDS_FNAME ?= training_data
 
+ensure-protoc-installed:
+ifeq (, $(shell which protoc))
+ 	$(error "protoc utility not found, please follow instructions at http://google.github.io/proto-lens/installing-protoc.html to install")
+endif
+ifeq (, $(shell which protoc-gen-go))
+ 	$(error "protoc-gen-go plugin not found, please follow instructions at https://github.com/golang/protobuf#installation to install")
+endif
+	@echo "protoc and protoc-gen-go installed!"
+
 show-protoc-dirs:                            ## Show directory vars used for protoc scripts
 	@echo TRAINER_LOCATION=${TRAINER_LOCATION}
 	@echo TRAINER_SUBDIR=${TRAINER_SUBDIR}
@@ -45,7 +54,7 @@ show-protoc-dirs:                            ## Show directory vars used for pro
 	@echo TDS_SUBDIR=${TDS_SUBDIR}
 	@echo TDS_FNAME=${TDS_FNAME}
 
-protoc-trainer:                              ## Make the trainer protoc client, depends on `make glide` being run first
+protoc-trainer: ensure-protoc-installed  ## Make the trainer protoc client, depends on `make glide` being run first
 	mkdir -p $(TRAINER_LOCATION)/$(TRAINER_SUBDIR) && cp ../$(REPO_TRAINER)/$(TRAINER_SUBDIR_IN)/$(TRAINER_FNAME).proto $(TRAINER_LOCATION)/$(TRAINER_SUBDIR)
 	mkdir -p $(TRAINER_LOCATION)/client && cp ../$(REPO_TRAINER)/client/client.go $(TRAINER_LOCATION)/client
 	mkdir -p $(TRAINER_LOCATION)/client && cp ../$(REPO_TRAINER)/client/jobstatus_client.go $(TRAINER_LOCATION)/client
@@ -57,7 +66,7 @@ protoc-trainer:                              ## Make the trainer protoc client, 
 	cd $(TRAINER_LOCATION); \
 	sed -i .bak '/.*bson:.*/! s/json:"\([^"]*\)"/json:"\1" bson:"\1"/' ./$(TRAINER_SUBDIR)/$(TRAINER_FNAME).pb.go
 
-protoc-lcm:                                  ## Make the lcm protoc client, depends on `make glide` being run first
+protoc-lcm:  ensure-protoc-installed  ## Make the lcm protoc client, depends on `make glide` being run first
 	mkdir -p $(LCM_LOCATION)/$(LCM_SUBDIR) && cp ../$(REPO_LCM)/$(LCM_SUBDIR_IN)/$(LCM_FNAME).proto $(LCM_LOCATION)/$(LCM_SUBDIR)
 	mkdir -p $(LCM_LOCATION)/service/client && cp ../$(REPO_LCM)/service/client/lcm.go $(LCM_LOCATION)/service/client
 	mkdir -p $(LCM_LOCATION)/service && cp ../$(REPO_LCM)/service/lifecycle.go $(LCM_LOCATION)/service
@@ -70,7 +79,7 @@ protoc-lcm:                                  ## Make the lcm protoc client, depe
 	cd $(LCM_LOCATION); \
 	sed -i .bak '/.*bson:.*/! s/json:"\([^"]*\)"/json:"\1" bson:"\1"/' ./$(LCM_SUBDIR)/$(LCM_FNAME).pb.go
 
-protoc-tds:                                  ## Make the training-data service protoc client, depends on `make glide` being run first
+protoc-tds:  ensure-protoc-installed  ## Make the training-data service protoc client, depends on `make glide` being run first
 	mkdir -p $(TDS_LOCATION)/$(TDS_SUBDIR) && cp ../$(REPO_TDS)/$(TDS_SUBDIR)/$(TDS_FNAME).proto $(TDS_LOCATION)/$(TDS_SUBDIR)
 	cd ./$(TDS_LOCATION); \
 	protoc -I./$(TDS_SUBDIR) --go_out=plugins=grpc:$(TDS_SUBDIR) ./$(TDS_SUBDIR)/$(TDS_FNAME).proto
