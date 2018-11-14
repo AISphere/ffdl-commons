@@ -60,9 +60,12 @@ REPOS_ALL ?= ${REPOS_CORE_FFDL} ${REPO_COMMONS}
 # Get all repos from org.
 REPOS_ALL_IN_ORG ?= $(shell curl -s https://api.github.com/orgs/AISphere/repos?per_page=10 | jq .[].ssh_url | xargs -n 1 echo)
 
-THIS_DIR = $(shell pwd)
-AISPHERE_DIR ?= $(shell dirname "$(THIS_DIR)")
-MAINBIN_DIR ?= ${AISPHERE_DIR}/${REPO_TRAINER}/bin
+# Dir of where ever this is used
+THIS_DIR := $(shell pwd)
+
+COMMONS_DIR := $(strip $(shell dirname $(realpath $(lastword $(MAKEFILE_LIST)))))
+AISPHERE_DIR ?= $(shell dirname "$(COMMONS_DIR)")
+MAINBIN_DIR := ${AISPHERE_DIR}/${REPO_TRAINER}/bin
 
 KUBE_CURRENT_CONTEXT ?= $(shell kubectl config current-context)
 
@@ -217,6 +220,7 @@ show-dirs:                                   ## Show directory vars used in the 
 	@echo MAKEFILE_LIST=${MAKEFILE_LIST}
 	@echo THIS_DIR=${THIS_DIR}
 	@echo AISPHERE_DIR=${AISPHERE_DIR}
+	@echo COMMONS_DIR=${COMMONS_DIR}
 
 show-docker-vars:                            ## Show variables related to docker, used by the Makefile
 	@echo DOCKER_IMG_NAME=${DOCKER_IMG_NAME}
