@@ -19,10 +19,12 @@
 #
 
 TILLER_NAMESPACE ?= ${DLAAS_SERVICES_KUBE_NAMESPACE}
-ENV_DIR ?= ${AISPHERE_DIR}/${REPO_TRAINER}/envs
+ROOT_DEPLOY_DIR := ${AISPHERE_DIR}/${REPO_TRAINER}
+ENV_DIR ?= ${ROOT_DEPLOY_DIR}/envs
 FFDL_DEPLOY_VALUES_FILENAME ?= dev_values.yaml
 FFDL_DEPLOY_VALUES ?= ${ENV_DIR}/${FFDL_DEPLOY_VALUES_FILENAME}
 HELM_FLAGS ?=
+HELM_DEPLOY_DIR := ${ROOT_DEPLOY_DIR}/helmdeploy
 
 show-helm-vars:       ## Show main helm vars
 	@echo HELM_DEPLOY_DIR: ${HELM_DEPLOY_DIR}; \
@@ -53,6 +55,7 @@ deploy: show-helm-vars       ## -> Deploy the services to Kubernetes
 	done
 	@echo calling big command
 	@set -o verbose; \
+		cd ${ROOT_DEPLOY_DIR}; \
 		echo HELM_DEPLOY_DIR: ${HELM_DEPLOY_DIR}; \
 		helm dependency update; \
 		mkdir -p ${HELM_DEPLOY_DIR}; \
@@ -68,43 +71,44 @@ deploy: show-helm-vars       ## -> Deploy the services to Kubernetes
 			echo helm --debug upgrade --tiller-namespace ${TILLER_NAMESPACE} -f $(FFDL_DEPLOY_VALUES) $$existing ${HELM_DEPLOY_DIR} ; \
 			helm ${HELM_FLAGS} upgrade --tiller-namespace ${TILLER_NAMESPACE} -f $(FFDL_DEPLOY_VALUES) $$existing ${HELM_DEPLOY_DIR} ; \
 		fi) & pid=$$!; \
-		echo done with big command
-
-#		sleep 5; \
-#		while kubectl get pods | \
-#			grep -v RESTARTS | \
-#			grep -v Running | \
-#			grep 'alertmanager\|etcd0\|lcm\|restapi\|trainer\|trainingdata\|ui\|mongo\|prometheus\|pushgateway\|storage'; \
-#		do \
-#			sleep 5; \
-#		done; \
-#		existing=$$(helm list --tiller-namespace ${TILLER_NAMESPACE} | grep ffdl | awk '{print $$1}' | head -n 1); \
-#		for i in $$(seq 1 10); do \
-#			status=`helm status --tiller-namespace ${TILLER_NAMESPACE} $$existing | grep STATUS:`; \
-#			echo $$status; \
-#			if echo "$$status" | grep "DEPLOYED" > /dev/null; then \
-#				kill $$pid > /dev/null 2>&1; \
-#				exit 0; \
-#			fi; \
-#			sleep 3; \
-#		done; \
-#		exit 0
-#	@echo done with big command
-
-#	@echo Initializing...
-#	@# wait for pods to be ready
-#	@while kubectl get pods | \
-#		grep -v RESTARTS | \
-#		grep -v Running | \
-#		grep 'alertmanager\|etcd0\|lcm\|restapi\|trainer\|trainingdata\|ui\|mongo\|prometheus\|pushgateway\|storage' > /dev/null; \
-#	do \
-#		sleep 5; \
-#	done
-#	@echo initialize monitoring dashboards
-#	@if [ "$$CI" != "true" ]; then bin/grafana.init.sh; fi
-#	@echo
-#	@echo System status:
-#	@make status
+		sleep 5; \
+		while kubectl get pods | \
+			grep -v RESTARTS | \
+			grep -v Running | \
+			grep 'alertmanager\|etcd0\|lcm\|restapi\|trainer\|trainingdata\|ui\|mongo\|prometheus\|pushgateway\|storage'; \
+		do \
+			sleep 5; \
+		done
+		@for i in $$(seq 1 10); do \
+			existing=$$(helm list --tiller-namespace ${TILLER_NAMESPACE} | grep ffdl | awk '{print $$1}' | head -n 1); \
+			if [ ! -z "$$existing" ]; then \
+				status=`helm status --tiller-namespace ${TILLER_NAMESPACE} $$existing | grep STATUS:`; \
+				echo $$status; \
+				if echo "$$status" | grep "DEPLOYED" > /dev/null; then \
+					kill $$pid > /dev/null 2>&1; \
+					exit 0; \
+				fi; \
+			else \
+				printf "."; \
+			fi; \
+			sleep 3; \
+		done; \
+		exit 0
+	@echo done with big command
+	@echo Initializing...
+	@# wait for pods to be ready
+	@while kubectl get pods | \
+		grep -v RESTARTS | \
+		grep -v Running | \
+		grep 'alertmanager\|etcd0\|lcm\|restapi\|trainer\|trainingdata\|ui\|mongo\|prometheus\|pushgateway\|storage' > /dev/null; \
+	do \
+		sleep 5; \
+	done
+	# @echo initialize monitoring dashboards
+	# @if [ "$$CI" != "true" ]; then bin/grafana.init.sh; fi
+	@echo
+	@echo System status:
+	@make status
 
 undeploy:                    ## Undeploy the services from Kubernetes
 	@# undeploy the stack
@@ -137,3 +141,23 @@ status:                      ## Print the current system status and service endp
 		echo "Web UI:\t\t$$status_ui"; \
 		status_grafana=$$(kubectl get service grafana -o jsonpath='{.spec.ports[0].nodePort}' 2> /dev/null) && status_grafana="Running (http://$$node_ip:$$status_grafana) (login: admin/admin)" || status_grafana="n/a"; \
 		echo "Grafana:\t$$status_grafana"
+
+# VM_TYPE is "vagrant", "minikube" or "none"
+VM_TYPE ?= none
+PUBLIC_IP ?= 127.0.0.1
+
+kubernetes-ip:
+	@if [ "$$CI" = "true" ]; then kubectl get nodes -o jsonpath='{ .items[0].status.addresses[?(@.type=="InternalIP")].address }'; \
+		elif [ "$(VM_TYPE)" = "vagrant" ]; then \
+			node_ip_line=$$(vagrant ssh master -c 'ifconfig eth1 | grep "inet "' 2> /dev/null); \
+			node_ip=$$(echo $$node_ip_line | sed "s/.*inet \([^ ]*\) .*/\1/"); \
+			echo $$node_ip; \
+		elif [ "$(VM_TYPE)" = "minikube" ]; then \
+			echo $$(minikube ip); \
+		elif [ "$(VM_TYPE)" = "ibmcloud" ]; then \
+			echo $$(bx cs workers $(CLUSTER_NAME) | grep Ready | awk '{ print $$2;exit }'); \
+		elif [ "$(VM_TYPE)" = "none" ]; then \
+			echo "$(PUBLIC_IP)"; \
+		else \
+			echo "$(PUBLIC_IP)"; \
+		fi

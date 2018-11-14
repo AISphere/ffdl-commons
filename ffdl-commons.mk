@@ -24,17 +24,6 @@ SHELL = /bin/sh
 # Note the awkward name is to avoid clashing with the DOCKER_HOST variable.
 DOCKERHOST_HOST ?= localhost
 
-KUBE_CURRENT_CONTEXT ?= $(shell kubectl config current-context)
-
-# Support two different Kuberentes clusters:
-# - one to deploy the DLaaS microservices
-# - one to deploy the learners and parameter servers.
-DLAAS_SERVICES_KUBE_CONTEXT ?= $(KUBE_CURRENT_CONTEXT)
-
-DLAAS_SERVICES_KUBE_NAMESPACE ?= $(shell env DLAAS_KUBE_CONTEXT=$(DLAAS_SERVICES_KUBE_CONTEXT) ./bin/kubecontext.sh namespace)
-
-KUBE_SERVICES_CONTEXT_ARGS = --context $(DLAAS_SERVICES_KUBE_CONTEXT) --namespace $(DLAAS_SERVICES_KUBE_NAMESPACE)
-
 # ----- Docker-specific variables -----
 WHOAMI ?= $(shell whoami)
 IMAGE_TAG ?= user-$(WHOAMI)
@@ -71,16 +60,30 @@ REPOS_ALL ?= ${REPOS_CORE_FFDL} ${REPO_COMMONS}
 # Get all repos from org.
 REPOS_ALL_IN_ORG ?= $(shell curl -s https://api.github.com/orgs/AISphere/repos?per_page=10 | jq .[].ssh_url | xargs -n 1 echo)
 
+# Dir of where ever this is used
+THIS_DIR := $(shell pwd)
+
+COMMONS_DIR := $(strip $(shell dirname $(realpath $(lastword $(MAKEFILE_LIST)))))
+AISPHERE_DIR ?= $(shell dirname "$(COMMONS_DIR)")
+MAINBIN_DIR := ${AISPHERE_DIR}/${REPO_TRAINER}/bin
+
+KUBE_CURRENT_CONTEXT ?= $(shell kubectl config current-context)
+
+# Support two different Kuberentes clusters:
+# - one to deploy the DLaaS microservices
+# - one to deploy the learners and parameter servers.
+DLAAS_SERVICES_KUBE_CONTEXT ?= $(KUBE_CURRENT_CONTEXT)
+
+DLAAS_SERVICES_KUBE_NAMESPACE ?= $(shell env DLAAS_KUBE_CONTEXT=$(DLAAS_SERVICES_KUBE_CONTEXT) ${MAINBIN_DIR}/kubecontext.sh namespace)
+
+KUBE_SERVICES_CONTEXT_ARGS = --context $(DLAAS_SERVICES_KUBE_CONTEXT) --namespace $(DLAAS_SERVICES_KUBE_NAMESPACE)
+
 # The target host for the e2e test.
 #DLAAS_HOST?=localhost:30001
-DLAAS_HOST?=$(shell env DLAAS_KUBE_CONTEXT=$(DLAAS_SERVICES_KUBE_CONTEXT) ./bin/kubecontext.sh restapi-url)
+DLAAS_HOST?=$(shell env DLAAS_KUBE_CONTEXT=$(DLAAS_SERVICES_KUBE_CONTEXT) ${MAINBIN_DIR}/kubecontext.sh restapi-url)
 
 # The target host for the grpc cli.
-DLAAS_GRPC?=$(shell env DLAAS_KUBE_CONTEXT=$(DLAAS_SERVICES_KUBE_CONTEXT) ./bin/kubecontext.sh trainer-url)
-
-THIS_DIR = $(shell pwd)
-AISPHERE_DIR ?= $(shell dirname "$(THIS_DIR)")
-HELM_DEPLOY_DIR := ${AISPHERE_DIR}/${REPO_TRAINER}/helmdeploy
+DLAAS_GRPC?=$(shell env DLAAS_KUBE_CONTEXT=$(DLAAS_SERVICES_KUBE_CONTEXT) ${MAINBIN_DIR}/bin/kubecontext.sh trainer-url)
 
 include ${AISPHERE_DIR}/ffdl-commons/ffdl-protoc.mk
 
@@ -196,10 +199,28 @@ del-certs:                                   ## delete all certificates
 	rm -f client.*; \
 	rm -f server.*
 
+ensure-kubectl-installed:
+ifeq (, $(shell which kubectl))
+ 	$(error "kubectl utility not found, please follow instructions at https://kubernetes.io/docs/tasks/tools/install-kubectl/ to install")
+endif
+
+cli-grpc-config: ensure-kubectl-installed  ## Show env vars needed to run gRPC cli
+	@host=$(shell kubectl get nodes -o jsonpath='{.items[0].status.addresses[0].address}'); \
+	port=$(shell kubectl get svc/ffdl-trainer -o jsonpath='{.spec.ports[0].nodePort}' 2> /dev/null); \
+	if [[ -z "$$host" || -z "$$port" ]]; then \
+		url="localhost:30005"; \
+	else \
+		url="$$host:$$port"; \
+	fi; \
+	echo "# To use the DLaaS GRPC CLI, set the following environment variables:"; \
+	echo "export DLAAS_USERID=user-$(WHOAMI)  # replace with your name"; \
+	echo "export DLAAS_GRPC=$$url  # for the GRPC cli"
+
 show-dirs:                                   ## Show directory vars used in the makefile, used by the Makefile
 	@echo MAKEFILE_LIST=${MAKEFILE_LIST}
 	@echo THIS_DIR=${THIS_DIR}
 	@echo AISPHERE_DIR=${AISPHERE_DIR}
+	@echo COMMONS_DIR=${COMMONS_DIR}
 
 show-docker-vars:                            ## Show variables related to docker, used by the Makefile
 	@echo DOCKER_IMG_NAME=${DOCKER_IMG_NAME}
