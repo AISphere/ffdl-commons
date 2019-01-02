@@ -64,7 +64,7 @@ protoc-trainer: ensure-protoc-installed  ## Make the trainer protoc client, depe
 	@# At the time of writing, protoc does not support custom tags, hence use a little regex to add "bson:..." tags
 	@# See: https://github.com/golang/protobuf/issues/52
 	cd $(TRAINER_LOCATION); \
-	sed -i .bak '/.*bson:.*/! s/json:"\([^"]*\)"/json:"\1" bson:"\1"/' ./$(TRAINER_SUBDIR)/$(TRAINER_FNAME).pb.go
+	sed -i.bak '/.*bson:.*/! s/json:"\([^"]*\)"/json:"\1" bson:"\1"/' ./$(TRAINER_SUBDIR)/$(TRAINER_FNAME).pb.go
 
 protoc-lcm:  ensure-protoc-installed  ## Make the lcm protoc client, depends on `make glide` being run first
 	mkdir -p $(LCM_LOCATION)/$(LCM_SUBDIR) && cp ../$(REPO_LCM)/$(LCM_SUBDIR_IN)/$(LCM_FNAME).proto $(LCM_LOCATION)/$(LCM_SUBDIR)
@@ -77,7 +77,7 @@ protoc-lcm:  ensure-protoc-installed  ## Make the lcm protoc client, depends on 
 	@# At the time of writing, protoc does not support custom tags, hence use a little regex to add "bson:..." tags
 	@# See: https://github.com/golang/protobuf/issues/52
 	cd $(LCM_LOCATION); \
-	sed -i .bak '/.*bson:.*/! s/json:"\([^"]*\)"/json:"\1" bson:"\1"/' ./$(LCM_SUBDIR)/$(LCM_FNAME).pb.go
+	sed -i.bak '/.*bson:.*/! s/json:"\([^"]*\)"/json:"\1" bson:"\1"/' ./$(LCM_SUBDIR)/$(LCM_FNAME).pb.go
 
 protoc-tds:  ensure-protoc-installed  ## Make the training-data service protoc client, depends on `make glide` being run first
 	mkdir -p $(TDS_LOCATION)/$(TDS_SUBDIR) && cp ../$(REPO_TDS)/$(TDS_SUBDIR)/$(TDS_FNAME).proto $(TDS_LOCATION)/$(TDS_SUBDIR)
@@ -86,6 +86,6 @@ protoc-tds:  ensure-protoc-installed  ## Make the training-data service protoc c
 	@# At the time of writing, protoc does not support custom tags, hence use a little regex to add "bson:..." tags
 	@# See: https://github.com/golang/protobuf/issues/52
 	cd $(TDS_LOCATION); \
-	sed -i .bak '/.*bson:.*/! s/json:"\([^"]*\)"/json:"\1" bson:"\1"/' ./$(TDS_SUBDIR)/$(TDS_FNAME).pb.go
+	sed -i.bak '/.*bson:.*/! s/json:"\([^"]*\)"/json:"\1" bson:"\1"/' ./$(TDS_SUBDIR)/$(TDS_FNAME).pb.go
 
 .PHONY: protoc-trainer protoc-lcm protoc-tds show-protoc-dirs
