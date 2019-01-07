@@ -104,32 +104,46 @@ pipeline {
             steps {
                 dir("$AISPHERE/${env.DOCKER_REPO_NAME}") {
                     sh "make ensure-protoc-installed"
-                    sh "make install-deps-if-needed"
+                    sh "make all-install-deps"
                 }
             }
         }
         stage('build') {
             steps {
-                dir("$AISPHERE/${env.DOCKER_REPO_NAME}") {
-                    sh "make build-x86-64"
-                    sh "make build-grpc-health-checker"
+                script {
+                    String[] repos = [
+                            "rest-apis",
+                            "ffdl-model-metrics",
+                            "ffdl-trainer",
+                            "ffdl-lcm",
+                            "ffdl-job-monitor"] as String[]
+
+                    echo "top of loop"
+                    // echo repos
+                    for (String repo in repos) {
+                        dir("$AISPHERE/${repo}") {
+                            sh "make build-x86-64"
+                            sh "make build-grpc-health-checker"
+                        }
+                    }
                 }
             }
         }
         stage('docker-build') {
             steps {
-                dir("$AISPHERE/${env.DOCKER_REPO_NAME}") {
-                    script {
-                        withDockerServer([uri: "unix:///var/run/docker.sock"]) {
-                            withDockerRegistry([credentialsId: "${env.DOCKERHUB_CREDENTIALS_ID}",
-                                                url: "https://registry.ng.bluemix.net"]) {
-                                withEnv(["DLAAS_IMAGE_TAG=${env.JOB_BASE_NAME}"]) {
-                                    sh "docker build -t \"${env.DOCKERHUB_HOST}/$DOCKER_NAMESPACE/$DOCKER_IMG_NAME:$DLAAS_IMAGE_TAG\" ."
-                                }
-                            }
-                        }
-                    }
-                }
+                echo 'Build of ffdl-commons does not create or push docker images at this time'
+                //    dir("$AISPHERE/${env.DOCKER_REPO_NAME}") {
+                //        script {
+                //            withDockerServer([uri: "unix:///var/run/docker.sock"]) {
+                //                withDockerRegistry([credentialsId: "${env.DOCKERHUB_CREDENTIALS_ID}",
+                //                                    url: "https://registry.ng.bluemix.net"]) {
+                //                    withEnv(["DLAAS_IMAGE_TAG=${env.JOB_BASE_NAME}"]) {
+                //                        sh "docker build -t \"${env.DOCKERHUB_HOST}/$DOCKER_NAMESPACE/$DOCKER_IMG_NAME:$DLAAS_IMAGE_TAG\" ."
+                //                    }
+                //                }
+                //            }
+                //        }
+                //    }
             }
         }
         stage('Unit Test') {
@@ -146,18 +160,19 @@ pipeline {
         }
         stage('push') {
             steps {
-                dir("$AISPHERE/${env.DOCKER_REPO_NAME}") {
-                    script {
-                        withDockerServer([uri: "unix:///var/run/docker.sock"]) {
-                            withDockerRegistry([credentialsId: "${env.DOCKERHUB_CREDENTIALS_ID}",
-                                                url: "https://registry.ng.bluemix.net"]) {
-                                withEnv(["DLAAS_IMAGE_TAG=${env.JOB_BASE_NAME}"]) {
-                                    sh "docker push \"${env.DOCKERHUB_HOST}/$DOCKER_NAMESPACE/$DOCKER_IMG_NAME:$DLAAS_IMAGE_TAG\""
-                                }
-                            }
-                        }
-                    }
-                }
+                echo 'Build of ffdl-commons does not create or push docker images at this time'
+                //    dir("$AISPHERE/${env.DOCKER_REPO_NAME}") {
+                //        script {
+                //            withDockerServer([uri: "unix:///var/run/docker.sock"]) {
+                //                withDockerRegistry([credentialsId: "${env.DOCKERHUB_CREDENTIALS_ID}",
+                //                                    url: "https://registry.ng.bluemix.net"]) {
+                //                    withEnv(["DLAAS_IMAGE_TAG=${env.JOB_BASE_NAME}"]) {
+                //                        sh "docker push \"${env.DOCKERHUB_HOST}/$DOCKER_NAMESPACE/$DOCKER_IMG_NAME:$DLAAS_IMAGE_TAG\""
+                //                    }
+                //                }
+                //            }
+                //        }
+                //    }
             }
         }
     }
