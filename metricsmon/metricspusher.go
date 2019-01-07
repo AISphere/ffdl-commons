@@ -54,7 +54,7 @@ func StartMetricsPusher(label string, interval time.Duration, url string) chan s
 					return nil, err
 				})
 			case <-quit:
-				log.Info("request to stop the metrics pusher for url %s", url)
+				log.Infof("request to stop the metrics pusher for url %v", url)
 				ticker.Stop()
 				return
 			}

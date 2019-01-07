@@ -102,7 +102,7 @@ func checkHealth(cmd *cobra.Command, args []string) {
 		Service: service,
 	})
 	if err != nil {
-		logDebug("Error: ", err.Error())
+		logDebug("Error: %v", err.Error())
 		os.Exit(1)
 	}
 	if resp.Status == grpc_health_v1.HealthCheckResponse_UNKNOWN {
@@ -115,8 +115,8 @@ func checkHealth(cmd *cobra.Command, args []string) {
 	}
 }
 
-func logDebug(v ...interface{}) {
+func logDebug(format string, v ...interface{}) {
 	if debug {
-		log.Println(v)
+		log.Printf(format, v...)
 	}
 }
