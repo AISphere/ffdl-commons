@@ -104,6 +104,7 @@ pipeline {
                 dir("$AISPHERE/${env.DOCKER_REPO_NAME}") {
                     sh "make ensure-protoc-installed"
                     sh "make all-install-deps"
+                    sh "make glide-update"
                 }
             }
         }
