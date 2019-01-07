@@ -105,7 +105,7 @@ pipeline {
                     sh "make ensure-protoc-installed"
                     sh "make all-install-deps"
                     sh "make all-glide-update"
-                    sh "make all-install-deps-local-commons"
+                    // sh "make all-install-deps-local-commons"
                 }
             }
         }
@@ -118,7 +118,7 @@ pipeline {
                             "ffdl-model-metrics",
                             "ffdl-job-monitor"] as String[]
 
-                    echo "top of loop"
+                    echo "About to enter build loop"
                     // echo repos
                     for (String repo in repos) {
                         dir("$AISPHERE/${repo}") {
