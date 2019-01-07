@@ -105,6 +105,8 @@ pipeline {
                 dir("$AISPHERE/${env.DOCKER_REPO_NAME}") {
                     sh "make ensure-protoc-installed"
                     sh "make all-install-deps"
+                    sh "make all-glide-update"
+                    sh "make all-install-deps-local-commons"
                 }
             }
         }
@@ -112,7 +114,6 @@ pipeline {
             steps {
                 script {
                     String[] repos = [
-                            "rest-apis",
                             "ffdl-model-metrics",
                             "ffdl-trainer",
                             "ffdl-lcm",
