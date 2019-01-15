@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 
-
 package config
 
 import (
@@ -147,6 +146,11 @@ const (
 
 	DlaasResourceLimit          = "resource.limit"
 	DlaasResourceLimitQuerySize = "resource.limit.query.size"
+
+	trainerServiceName     = "trainer_service_name"
+	lcmServiceName         = "trainer_service_name"
+	tdsServiceName         = "trainer_service_name"
+	rateLimiterServiceName = "ratelimiter_service_name"
 )
 
 var viperInitOnce sync.Once
@@ -199,6 +203,11 @@ func InitViper() {
 		viper.SetDefault(learnerKubeKeyFileKey, path.Join(learnerKubeSecretsRoot, "client.key"))
 		viper.SetDefault(learnerKubeCertFileKey, path.Join(learnerKubeSecretsRoot, "client.crt"))
 		viper.SetDefault(learnerKubeTokenFileKey, path.Join(learnerKubeSecretsRoot, "token"))
+
+		viper.SetDefault(trainerServiceName, "ffdl-trainer")
+		viper.SetDefault(lcmServiceName, "ffdl-lcm")
+		viper.SetDefault(tdsServiceName, "ffdl-trainingdata")
+		viper.SetDefault(rateLimiterServiceName, "dlaas-ratelimiter")
 
 		// config file is optional. we usually configure via ENV_VARS
 		configFile := fmt.Sprintf("config-%s", viper.Get(EnvKey))
@@ -574,4 +583,3 @@ func getFileAtLocation(location string) string {
 func GetPushgatewayURL() string {
 	return fmt.Sprintf("http://pushgateway:%s", "9091")
 }
-
