@@ -148,8 +148,8 @@ const (
 	DlaasResourceLimitQuerySize = "resource.limit.query.size"
 
 	trainerServiceName     = "trainer_service_name"
-	lcmServiceName         = "trainer_service_name"
-	tdsServiceName         = "trainer_service_name"
+	lcmServiceName         = "lcm_service_name"
+	tdsServiceName         = "tds_service_name"
 	rateLimiterServiceName = "ratelimiter_service_name"
 )
 
