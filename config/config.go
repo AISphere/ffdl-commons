@@ -204,6 +204,7 @@ func InitViper() {
 		viper.SetDefault(learnerKubeCertFileKey, path.Join(learnerKubeSecretsRoot, "client.crt"))
 		viper.SetDefault(learnerKubeTokenFileKey, path.Join(learnerKubeSecretsRoot, "token"))
 
+		// Configurable names of services
 		viper.SetDefault(trainerServiceName, "ffdl-trainer")
 		viper.SetDefault(lcmServiceName, "ffdl-lcm")
 		viper.SetDefault(tdsServiceName, "ffdl-trainingdata")
