@@ -148,8 +148,8 @@ const (
 	DlaasResourceLimitQuerySize = "resource.limit.query.size"
 
 	trainerServiceName     = "trainer_service_name"
-	lcmServiceName         = "trainer_service_name"
-	tdsServiceName         = "trainer_service_name"
+	lcmServiceName         = "lcm_service_name"
+	tdsServiceName         = "tds_service_name"
 	rateLimiterServiceName = "ratelimiter_service_name"
 )
 
@@ -204,6 +204,7 @@ func InitViper() {
 		viper.SetDefault(learnerKubeCertFileKey, path.Join(learnerKubeSecretsRoot, "client.crt"))
 		viper.SetDefault(learnerKubeTokenFileKey, path.Join(learnerKubeSecretsRoot, "token"))
 
+		// Configurable names of services
 		viper.SetDefault(trainerServiceName, "ffdl-trainer")
 		viper.SetDefault(lcmServiceName, "ffdl-lcm")
 		viper.SetDefault(tdsServiceName, "ffdl-trainingdata")
