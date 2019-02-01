@@ -147,10 +147,10 @@ const (
 	DlaasResourceLimit          = "resource.limit"
 	DlaasResourceLimitQuerySize = "resource.limit.query.size"
 
-	trainerServiceName     = "trainer_service_name"
-	lcmServiceName         = "lcm_service_name"
-	tdsServiceName         = "tds_service_name"
-	rateLimiterServiceName = "ratelimiter_service_name"
+	TrainerServiceName     = "trainer_service_name"
+	LcmServiceName         = "lcm_service_name"
+	TdsServiceName         = "tds_service_name"
+	RateLimiterServiceName = "ratelimiter_service_name"
 )
 
 var viperInitOnce sync.Once
@@ -205,10 +205,10 @@ func InitViper() {
 		viper.SetDefault(learnerKubeTokenFileKey, path.Join(learnerKubeSecretsRoot, "token"))
 
 		// Configurable names of services
-		viper.SetDefault(trainerServiceName, "ffdl-trainer")
-		viper.SetDefault(lcmServiceName, "ffdl-lcm")
-		viper.SetDefault(tdsServiceName, "ffdl-trainingdata")
-		viper.SetDefault(rateLimiterServiceName, "dlaas-ratelimiter")
+		viper.SetDefault(TrainerServiceName, "ffdl-trainer")
+		viper.SetDefault(LcmServiceName, "ffdl-lcm")
+		viper.SetDefault(TdsServiceName, "ffdl-trainingdata")
+		viper.SetDefault(RateLimiterServiceName, "dlaas-ratelimiter")
 
 		// config file is optional. we usually configure via ENV_VARS
 		configFile := fmt.Sprintf("config-%s", viper.Get(EnvKey))

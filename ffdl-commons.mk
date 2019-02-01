@@ -105,7 +105,7 @@ glide-clean:                                 ## Run full glide rebuild
 	rm -rf vendor;
 
 install-deps-local-commons:						 ## Install local ffdl-commons into vendor dir
-	cp -rf ${AISPHERE_DIR}/${REPO_COMMONS} vendor/github.com/AISphere
+	rsync -av ${AISPHERE_DIR}/${REPO_COMMONS} vendor/github.com/AISphere --exclude vendor --exclude .git --exclude .github
 
 glide-install:                               ## Run full glide rebuild
 	glide install
@@ -252,13 +252,12 @@ all-glide-update:                            ## Call glide-update for all ffdl r
 		make glide-update; \
 	done
 
-all-install-deps:                            ## Call install-deps for all ffdl repos
+all-install-deps-only:                            ## Call install-deps for all ffdl repos
 	@for x in ${REPOS_CORE_FFDL}; do \
 		echo install-deps ${AISPHERE_DIR}/$$x; \
 		cd ${AISPHERE_DIR}/$$x; \
 		make install-deps; \
 	done
-	make all-install-deps-local-commons
 
 all-install-deps-local-commons:                    ## Copy local ffdl-commons into all vendor dirs.  Useful when testing local commons cases
 	@for x in ${REPOS_CORE_FFDL}; do \
@@ -266,6 +265,8 @@ all-install-deps-local-commons:                    ## Copy local ffdl-commons in
 		cd ${AISPHERE_DIR}/$$x; \
 		make install-deps-local-commons; \
 	done
+
+all-install-deps:  all-install-deps-only all-install-deps-local-commons ## Call all-install-deps-basic and all-install-deps-local-commons
 
 all-protoc:                    ## Create grpc proto clients for repos (via protoc)
 	@for x in ${REPOS_CORE_FFDL}; do \

@@ -47,6 +47,9 @@ pipeline {
                 echo "Testing kubectl"
                 sh "which kubectl"
 
+                echo "Testing rsync"
+                sh "which rsync"
+
                 echo "Testing glide"
                 sh "which glide"
 
@@ -93,8 +96,17 @@ pipeline {
             steps {
                 dir("$AISPHERE/${env.DOCKER_REPO_NAME}") {
                     sh "make ensure-protoc-installed"
-                    sh "make all-install-deps"
+                    sh "make all-install-deps-only"
                     sh "make glide-update"
+                }
+            }
+        }
+        stage('lint') {
+            steps {
+                dir("$AISPHERE/${env.DOCKER_REPO_NAME}") {
+                    // Wait until after code reversal to do lints
+                    // sh "make lint"
+                    sh "make vet"
                 }
             }
         }
