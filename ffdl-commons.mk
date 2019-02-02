@@ -21,7 +21,7 @@
 SHELL = /bin/sh
 
 # The ip or hostname of the Docker host.
-# Note the awkward name is to avoid clashing with the DOCKER_HOST variable.
+# Note the awkward name is to avoid clashing with the DOCKER_HOST_NAME variable.
 DOCKERHOST_HOST ?= localhost
 
 # ----- Docker-specific variables -----
@@ -32,7 +32,7 @@ IMAGE_TAG ?= user-$(WHOAMI)
 DLAAS_IMAGE_TAG ?= user-$(WHOAMI)
 
 DOCKER_BX_NS_HOST ?= registry.ng.bluemix.net
-DOCKER_HOST ?= ${DOCKER_BX_NS_HOST}
+DOCKER_HOST_NAME ?= ${DOCKER_BX_NS_HOST}
 DOCKER_NAMESPACE ?= dlaas_dev
 DOCKER_REPO_USER ?= user-test
 DOCKER_REPO_PASS ?= test
@@ -128,7 +128,7 @@ build-x86-64:                                ## Install dependencies if needed, 
 	(CGO_ENABLED=0 GOOS=linux go build -ldflags "-s" -a -installsuffix cgo -o bin/main)
 
 docker-build-only:
-	(docker build --label git-commit=$(shell git rev-list -1 HEAD) -t "$(DOCKER_HOST)/$(DOCKER_NAMESPACE)/$(DOCKER_IMG_NAME):$(DLAAS_IMAGE_TAG)" .)
+	(docker build --label git-commit=$(shell git rev-list -1 HEAD) -t "$(DOCKER_HOST_NAME)/$(DOCKER_NAMESPACE)/$(DOCKER_IMG_NAME):$(DLAAS_IMAGE_TAG)" .)
 
 docker-build-base-only: install-deps-if-needed build-x86-64 docker-build-only
 
@@ -137,17 +137,17 @@ docker-build-base: install-deps-if-needed build-grpc-health-checker build-x86-64
 build: docker-build docker-push               ## -> Build and push images for current repo
 
 docker-push-base:
-	@if [ "${DOCKER_HOST}" = "docker.io" ]; then \
+	@if [ "${DOCKER_HOST_NAME}" = "docker.io" ]; then \
 		if [[ -z "${DOCKER_REPO_USER}" ]] || [[ -z "${DOCKER_REPO_PASS}" ]] ; then \
 			echo "Please define DOCKER_REPO_USER and DOCKER_REPO_PASS."; \
 			exit 1; \
 		else \
 			docker login --username="${DOCKER_REPO_USER}" --password="${DOCKER_REPO_PASS}"; \
-			docker push "$(DOCKER_HOST)/$(DOCKER_NAMESPACE)/$(DOCKER_IMG_NAME):$(DLAAS_IMAGE_TAG)"; \
+			docker push "$(DOCKER_HOST_NAME)/$(DOCKER_NAMESPACE)/$(DOCKER_IMG_NAME):$(DLAAS_IMAGE_TAG)"; \
 		fi; \
 	else \
-		echo docker push "$(DOCKER_HOST)/$(DOCKER_NAMESPACE)/$(DOCKER_IMG_NAME):$(DLAAS_IMAGE_TAG)"; \
-		docker push "$(DOCKER_HOST)/$(DOCKER_NAMESPACE)/$(DOCKER_IMG_NAME):$(DLAAS_IMAGE_TAG)"; \
+		echo docker push "$(DOCKER_HOST_NAME)/$(DOCKER_NAMESPACE)/$(DOCKER_IMG_NAME):$(DLAAS_IMAGE_TAG)"; \
+		docker push "$(DOCKER_HOST_NAME)/$(DOCKER_NAMESPACE)/$(DOCKER_IMG_NAME):$(DLAAS_IMAGE_TAG)"; \
 	fi;
 
 git-branch-status:                           ## Show this repos branch status
@@ -224,7 +224,7 @@ show-dirs:                                   ## Show directory vars used in the 
 
 show-docker-vars:                            ## Show variables related to docker, used by the Makefile
 	@echo DOCKER_IMG_NAME=${DOCKER_IMG_NAME}
-	@echo DOCKER_HOST=${DOCKER_HOST}
+	@echo DOCKER_HOST_NAME=${DOCKER_HOST_NAME}
 	@echo DOCKER_REPO_USER=${DOCKER_REPO_USER}
 	@echo DOCKER_REPO_PASS=${DOCKER_REPO_PASS}
 	@echo DOCKER_NAMESPACE=${DOCKER_NAMESPACE}
