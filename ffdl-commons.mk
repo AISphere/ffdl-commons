@@ -123,7 +123,9 @@ build-grpc-health-checker:
 
 build-x86-64:                                ## Install dependencies if needed, compile go code
 	@if [ ! -d "vendor" ]; then \
-		make install-deps; \
+		if [ -f "glide.yaml" ]; then \
+			make install-deps; \
+		fi; \
 	fi; \
 	(CGO_ENABLED=0 GOOS=linux go build -ldflags "-s" -a -installsuffix cgo -o bin/main)
 
