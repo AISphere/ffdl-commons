@@ -1,5 +1,5 @@
 /*
- * Copyright 2018. IBM Corporation
+ * Copyright 2017-2018 IBM Corporation
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -117,6 +117,9 @@ const (
 	// LearnerNamespaceKey is the key to find the K8S namespace learners are supposed to run in.
 	LearnerKubeNamespaceKey = "learner.kube.namespace"
 
+	// LearnerKubeServiceAccount is the key to find the K8S ServiceAccount that learners will use in order to be assigned a PodSecurityPolicy (ICP)
+	LearnerKubeServiceAccount = "learner.kube.serviceaccount"
+
 	// The path in the filesystem where the learner kubernetes cluster secrets are stored.
 	learnerKubeSecretsRoot = "/var/run/secrets/learner-kube"
 
@@ -147,10 +150,37 @@ const (
 	DlaasResourceLimit          = "resource.limit"
 	DlaasResourceLimitQuerySize = "resource.limit.query.size"
 
-	TrainerServiceName     = "trainer_service_name"
-	LcmServiceName         = "lcm_service_name"
-	TdsServiceName         = "tds_service_name"
-	RateLimiterServiceName = "ratelimiter_service_name"
+	TrainerServiceName     = "trainer.service.name"
+	LCMServiceName         = "lcm.service.name"
+	RatelimiterServiceName = "ratelimiter.service.name"
+	TDSServiceName         = "tds.service.name"
+
+	// If this is true, the LCM will use the non-split configuration,
+	// and will use the host mount on the nodes for logs and emetrics
+	// (and control data), and will launch fluentd on each node.
+	// Will be DLAAS_LCM_FLUENT_EMETRICS_ENABLE in environment.
+	LcmFluentdEmetricsEnable = "lcm.fluentd.emetrics.enable"
+
+	// If this is true, the log collectors will still push to
+	// the tds.  If it is false, the emetrics 1.0 will not be pushed
+	// to the tds, and the 1.0 files will not be written to the
+	// user's COS.  The emetrics 2.0.0 files will be written in
+	// in either case, for pickup by the fluentd collectors on
+	// each node.
+	// Will be DLAAS_LOGCOLLECTOR_EMETRICS_TDS_PUSH_ENABLED in environment.
+	LogcollectorEmetricsTdsPushEnabled = "logcollector.emetrics.tds.push.enabled"
+
+	// The serviceaccount that LCM and jobmonitor uses, which has permissions to get pods
+	LCMServiceAccount = "lcm.serviceaccount"
+
+	// Secret name for LCM secrets
+	LCMSecretName = "lcm.secret"
+
+	// Secret name for LCM secrets
+	SSLSecretName = "ssl.secret"
+
+	// FfDLExtendedEnabled tells if we should be using FfDL extended learner mechanism
+	FfDLExtendedEnabled = "ffdl.extended"
 )
 
 var viperInitOnce sync.Once
@@ -181,10 +211,25 @@ func InitViper() {
 		viper.SetDefault(DataBrokerTagKey, "prod")
 		viper.SetDefault(LearnerRegistryKey, "docker.io/ffdl")
 		viper.SetDefault(LearnerImagePullSecretKey, "bluemix-cr-ng")
+		viper.SetDefault(LearnerKubeServiceAccount, "default")
+		viper.SetDefault(LCMServiceAccount, "editor")
+
+		viper.SetDefault(LCMSecretName, "lcm-secrets")
+		viper.SetDefault(SSLSecretName, "service-ssl-certificates")
+
+		viper.SetDefault(TrainerServiceName, "dlaas-trainer-v2")
+		viper.SetDefault(LCMServiceName, "dlaas-lcm")
+		viper.SetDefault(RatelimiterServiceName, "dlaas-ratelimiter")
+		viper.SetDefault(TDSServiceName, "dlaas-training-data")
+
+		viper.SetDefault(LcmFluentdEmetricsEnable, false)
+		viper.SetDefault(LogcollectorEmetricsTdsPushEnabled, true)
 
 		// TLS defaults for microservices
 		viper.SetDefault(TLSKey, true)
 		viper.SetDefault(ServerNameKey, "dlaas.ibm.com")
+
+		viper.SetDefault(FfDLExtendedEnabled, false)
 
 		// find certificates locally or in known place (in docker image)
 		baseDir := getBaseDir()
@@ -203,12 +248,6 @@ func InitViper() {
 		viper.SetDefault(learnerKubeKeyFileKey, path.Join(learnerKubeSecretsRoot, "client.key"))
 		viper.SetDefault(learnerKubeCertFileKey, path.Join(learnerKubeSecretsRoot, "client.crt"))
 		viper.SetDefault(learnerKubeTokenFileKey, path.Join(learnerKubeSecretsRoot, "token"))
-
-		// Configurable names of services
-		viper.SetDefault(TrainerServiceName, "ffdl-trainer")
-		viper.SetDefault(LcmServiceName, "ffdl-lcm")
-		viper.SetDefault(TdsServiceName, "ffdl-trainingdata")
-		viper.SetDefault(RateLimiterServiceName, "dlaas-ratelimiter")
 
 		// config file is optional. we usually configure via ENV_VARS
 		configFile := fmt.Sprintf("config-%s", viper.Get(EnvKey))
@@ -277,6 +316,10 @@ func GetFileContents(filename string) string {
 // it is false.
 func IsTLSEnabled() bool {
 	return viper.GetBool(TLSKey)
+}
+
+func IsFfDLExtendedEnabled() bool {
+	return viper.GetBool(FfDLExtendedEnabled)
 }
 
 // GetServerCert gets the server's TLS certificate file name.
@@ -353,6 +396,11 @@ func GetLearnerNamespace() string {
 		return viper.GetString(LearnerKubeNamespaceKey)
 	}
 	return "default"
+}
+
+// GetLearnerServiceAccount gets the serviceaccount that learners will use to be assigned a PodSecurityPolicy (ICP)
+func GetLearnerServiceAccount() string {
+	return viper.GetString(LearnerKubeServiceAccount)
 }
 
 //CheckPushGatewayEnabled ... for sending out metrics
@@ -583,4 +631,39 @@ func getFileAtLocation(location string) string {
 //GetPushgatewayURL ...
 func GetPushgatewayURL() string {
 	return fmt.Sprintf("http://pushgateway:%s", "9091")
+}
+
+//GetTrainerServiceName ...
+func GetTrainerServiceName() string {
+	return viper.GetString(TrainerServiceName)
+}
+
+//GetLCMServiceName ...
+func GetLCMServiceName() string {
+	return viper.GetString(LCMServiceName)
+}
+
+//GetRatelimiterServiceName ...
+func GetRatelimiterServiceName() string {
+	return viper.GetString(RatelimiterServiceName)
+}
+
+//GetTDSServiceName ...
+func GetTDSServiceName() string {
+	return viper.GetString(TDSServiceName)
+}
+
+//GetLCMServiceAccount ...
+func GetLCMServiceAccount() string {
+	return viper.GetString(LCMServiceAccount)
+}
+
+//GetLCMSecret ...
+func GetLCMSecret() string {
+	return viper.GetString(LCMSecretName)
+}
+
+//GetSSLSecret ...
+func GetSSLSecret() string {
+	return viper.GetString(SSLSecretName)
 }

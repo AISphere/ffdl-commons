@@ -49,10 +49,9 @@ REPO_APITESTS ?= "ffdl-e2e-test"
 REPO_LCM ?= ffdl-lcm
 REPO_TRAINER ?= ffdl-trainer
 REPO_TDS ?= ffdl-model-metrics
-REPO_JOBMONITOR ?= ffdl-job-monitor
 
 REPOS_CORE_FFDL_SERVICE ?= ${REPO_LCM} ${REPO_TDS} ${REPO_TRAINER}
-REPOS_CORE_FFDL ?= ${REPOS_CORE_FFDL_SERVICE} ${REPO_JOBMONITOR}
+REPOS_CORE_FFDL ?= ${REPOS_CORE_FFDL_SERVICE}
 REPOS_ALL_SERVICE ?= ${REPOS_CORE_FFDL_SERVICE} ${REPO_RESTAPIS}
 REPOS_ALL_CERT_REPOS ?= ${REPOS_CORE_FFDL} ${REPO_RESTAPIS}
 REPOS_ALL ?= ${REPOS_CORE_FFDL} ${REPO_COMMONS}
@@ -95,11 +94,11 @@ vet:                                         ## go vet
 lint:                                        ## Run the code linter
 	go list ./... | grep -v /vendor/ | grep -v /grpc_trainer_v2 | xargs -L1 golint -set_exit_status
 
-glide-update:                                ## Run full glide rebuild
-	glide up; \
+glide-update-base:                                ## Run full glide rebuild
+	glide up;
 
 glide-cache-clear:                           ## Run clear the glide cache
-	glide cache-clear; \
+	glide cache-clear;
 
 glide-clean:                                 ## Run full glide rebuild
 	rm -rf vendor;
@@ -117,10 +116,6 @@ install-deps-if-needed:
 		make install-deps; \
 	fi \
 
-build-grpc-health-checker:
-	@cd vendor/github.com/AISphere/ffdl-commons/grpc-health-checker; \
-	make build-x86-64
-
 build-x86-64:                                ## Install dependencies if needed, compile go code
 	@if [ ! -d "vendor" ]; then \
 		if [ -f "glide.yaml" ]; then \
@@ -134,7 +129,7 @@ docker-build-only:
 
 docker-build-base-only: install-deps-if-needed build-x86-64 docker-build-only
 
-docker-build-base: install-deps-if-needed build-grpc-health-checker build-x86-64 docker-build-only
+docker-build-base: install-deps-if-needed build-x86-64 docker-build-only
 
 build: docker-build docker-push               ## -> Build and push images for current repo
 

@@ -32,6 +32,10 @@ TDS_LOCATION ?= vendor/github.com/AISphere/${REPO_TDS}
 TDS_SUBDIR ?= service/grpc_training_data_v1
 TDS_FNAME ?= training_data
 
+RELATIVE_REPO_TRAINER ?= ../$(REPO_TRAINER)
+RELATIVE_REPO_LCM ?= ../$(REPO_LCM)
+RELATIVE_REPO_TDS ?= ../$(REPO_TDS)
+
 ensure-protoc-installed:
 ifeq (, $(shell which protoc))
  	$(error "protoc utility not found, please follow instructions at http://google.github.io/proto-lens/installing-protoc.html to install")
@@ -55,10 +59,10 @@ show-protoc-dirs:                            ## Show directory vars used for pro
 	@echo TDS_FNAME=${TDS_FNAME}
 
 protoc-trainer: ensure-protoc-installed  ## Make the trainer protoc client, depends on `make glide` being run first
-	mkdir -p $(TRAINER_LOCATION)/$(TRAINER_SUBDIR) && cp ../$(REPO_TRAINER)/$(TRAINER_SUBDIR_IN)/$(TRAINER_FNAME).proto $(TRAINER_LOCATION)/$(TRAINER_SUBDIR)
-	mkdir -p $(TRAINER_LOCATION)/client && cp ../$(REPO_TRAINER)/client/client.go $(TRAINER_LOCATION)/client
-	mkdir -p $(TRAINER_LOCATION)/client && cp ../$(REPO_TRAINER)/client/jobstatus_client.go $(TRAINER_LOCATION)/client
-	mkdir -p $(TRAINER_LOCATION)/client && cp ../$(REPO_TRAINER)/client/training_status.go $(TRAINER_LOCATION)/client
+	mkdir -p $(TRAINER_LOCATION)/$(TRAINER_SUBDIR) && cp $(RELATIVE_REPO_TRAINER)/$(TRAINER_SUBDIR_IN)/$(TRAINER_FNAME).proto $(TRAINER_LOCATION)/$(TRAINER_SUBDIR)
+	mkdir -p $(TRAINER_LOCATION)/client && cp $(RELATIVE_REPO_TRAINER)/client/client.go $(TRAINER_LOCATION)/client
+	mkdir -p $(TRAINER_LOCATION)/client && cp $(RELATIVE_REPO_TRAINER)/client/jobstatus_client.go $(TRAINER_LOCATION)/client
+	mkdir -p $(TRAINER_LOCATION)/client && cp $(RELATIVE_REPO_TRAINER)/client/training_status.go $(TRAINER_LOCATION)/client
 	cd ./$(TRAINER_LOCATION); \
 	protoc -I./$(TRAINER_SUBDIR) --go_out=plugins=grpc:$(TRAINER_SUBDIR) ./$(TRAINER_SUBDIR)/$(TRAINER_FNAME).proto
 	@# At the time of writing, protoc does not support custom tags, hence use a little regex to add "bson:..." tags
@@ -67,11 +71,11 @@ protoc-trainer: ensure-protoc-installed  ## Make the trainer protoc client, depe
 	sed -i.bak '/.*bson:.*/! s/json:"\([^"]*\)"/json:"\1" bson:"\1"/' ./$(TRAINER_SUBDIR)/$(TRAINER_FNAME).pb.go
 
 protoc-lcm:  ensure-protoc-installed  ## Make the lcm protoc client, depends on `make glide` being run first
-	mkdir -p $(LCM_LOCATION)/$(LCM_SUBDIR) && cp ../$(REPO_LCM)/$(LCM_SUBDIR_IN)/$(LCM_FNAME).proto $(LCM_LOCATION)/$(LCM_SUBDIR)
-	mkdir -p $(LCM_LOCATION)/service/client && cp ../$(REPO_LCM)/service/client/lcm.go $(LCM_LOCATION)/service/client
-	mkdir -p $(LCM_LOCATION)/service && cp ../$(REPO_LCM)/service/lifecycle.go $(LCM_LOCATION)/service
-	mkdir -p $(LCM_LOCATION)/lcmconfig && cp ../$(REPO_LCM)/lcmconfig/lcmconfig.go $(LCM_LOCATION)/lcmconfig
-	mkdir -p $(LCM_LOCATION)/coord && cp ../$(REPO_LCM)/coord/coord.go $(LCM_LOCATION)/coord
+	mkdir -p $(LCM_LOCATION)/$(LCM_SUBDIR) && cp $(RELATIVE_REPO_LCM)/$(LCM_SUBDIR_IN)/$(LCM_FNAME).proto $(LCM_LOCATION)/$(LCM_SUBDIR)
+	mkdir -p $(LCM_LOCATION)/service/client && cp $(RELATIVE_REPO_LCM)/service/client/lcm.go $(LCM_LOCATION)/service/client
+	mkdir -p $(LCM_LOCATION)/service && cp $(RELATIVE_REPO_LCM)/service/lifecycle.go $(LCM_LOCATION)/service
+	mkdir -p $(LCM_LOCATION)/lcmconfig && cp $(RELATIVE_REPO_LCM)/lcmconfig/lcmconfig.go $(LCM_LOCATION)/lcmconfig
+	mkdir -p $(LCM_LOCATION)/coord && cp $(RELATIVE_REPO_LCM)/coord/coord.go $(LCM_LOCATION)/coord
 	cd ./$(LCM_LOCATION); \
 	protoc -I./$(LCM_SUBDIR) --go_out=plugins=grpc:$(LCM_SUBDIR) ./$(LCM_SUBDIR)/$(LCM_FNAME).proto
 	@# At the time of writing, protoc does not support custom tags, hence use a little regex to add "bson:..." tags
@@ -80,12 +84,14 @@ protoc-lcm:  ensure-protoc-installed  ## Make the lcm protoc client, depends on 
 	sed -i.bak '/.*bson:.*/! s/json:"\([^"]*\)"/json:"\1" bson:"\1"/' ./$(LCM_SUBDIR)/$(LCM_FNAME).pb.go
 
 protoc-tds:  ensure-protoc-installed  ## Make the training-data service protoc client, depends on `make glide` being run first
-	mkdir -p $(TDS_LOCATION)/$(TDS_SUBDIR) && cp ../$(REPO_TDS)/$(TDS_SUBDIR)/$(TDS_FNAME).proto $(TDS_LOCATION)/$(TDS_SUBDIR)
+	mkdir -p $(TDS_LOCATION)/client && cp $(RELATIVE_REPO_TDS)/client/client.go $(TDS_LOCATION)/client
+	mkdir -p $(TDS_LOCATION)/$(TDS_SUBDIR) && cp $(RELATIVE_REPO_TDS)/$(TDS_SUBDIR)/$(TDS_FNAME).proto $(TDS_LOCATION)/$(TDS_SUBDIR)
 	cd ./$(TDS_LOCATION); \
 	protoc -I./$(TDS_SUBDIR) --go_out=plugins=grpc:$(TDS_SUBDIR) ./$(TDS_SUBDIR)/$(TDS_FNAME).proto
 	@# At the time of writing, protoc does not support custom tags, hence use a little regex to add "bson:..." tags
 	@# See: https://github.com/golang/protobuf/issues/52
 	cd $(TDS_LOCATION); \
 	sed -i.bak '/.*bson:.*/! s/json:"\([^"]*\)"/json:"\1" bson:"\1"/' ./$(TDS_SUBDIR)/$(TDS_FNAME).pb.go
+
 
 .PHONY: protoc-trainer protoc-lcm protoc-tds show-protoc-dirs

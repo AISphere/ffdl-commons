@@ -1,5 +1,5 @@
 /*
- * Copyright 2018. IBM Corporation
+ * Copyright 2017-2018 IBM Corporation
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -99,7 +99,6 @@ var loggerInitOnce sync.Once
 // is not infrastructure related.  i.e. that is essentially application code.
 func FileInfoFindGood() string {
 	// Inspect runtime call stack
-	//fmt.Printf("%s\n", "In FileInfoFindGood")
 	pc := make([]uintptr, 30)
 	stackDepth := runtime.Callers(0, pc)
 
@@ -126,7 +125,6 @@ func FileInfoFindGood() string {
 	for i := 0; i < stackDepth && i < len(pc); i++ {
 		f = runtime.FuncForPC(pc[i])
 		file, line = f.FileLine(pc[i])
-		//fmt.Printf("%s\n", fmt.Sprintf("%s:%d %s -", file, line, "xxx"))
 		// There might ought to be some sort of registry for these hard-coded patterns.
 		if strings.Contains(file, ".pb.") {
 			continue
@@ -142,7 +140,6 @@ func FileInfoFindGood() string {
 		}
 		break
 	}
-	//fmt.Printf("%s\n", "Gonna try to get truncated path")
 
 	// Truncate abs file path
 	if slash := strings.LastIndex(file, "/"); slash >= 0 {
@@ -156,14 +153,12 @@ func FileInfoFindGood() string {
 		file = file2
 	}
 
-	//fmt.Printf("%s\n", "Gonna try to get function name")
 	// Truncate package name
 	funcName := f.Name()
 	if slash := strings.LastIndex(funcName, "."); slash >= 0 {
 		funcName = funcName[slash+1:]
 	}
 
-	//fmt.Printf("%s\n", "returning")
 	return fmt.Sprintf("%s:%d %s -", file, line, funcName)
 }
 

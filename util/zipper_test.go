@@ -1,5 +1,5 @@
 /*
- * Copyright 2018. IBM Corporation
+ * Copyright 2017-2018 IBM Corporation
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,10 +14,10 @@
  * limitations under the License.
  */
 
+
 package util
 
 import (
-	"fmt"
 	"os"
 	"path"
 	"path/filepath"
@@ -53,12 +53,6 @@ func TestZipUnzipRountrip(t *testing.T) {
 
 	err = Unzip(zipFilename, targetDir)
 	assert.NoError(t, err)
-
-	fmt.Printf("target dir is: %v\n", targetDir)
-	fmt.Printf("zipFilename is: %v\n", zipFilename)
-	fmt.Printf("zipFilename base is: %v\n", path.Base(zipFilename))
-	fmt.Printf("filename is: %v\n", filename)
-	fmt.Printf("filename base is: %v\n", path.Base(filename))
 
 	fiOrig, _ := os.Stat(filename)
 	fi, err2 = os.Stat(path.Join(os.TempDir(), "output-zip-dir", path.Base(filename)))
